@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>지원자 UP 순위</title>
+<meta name="description" content="SOOP 게시글 댓글의 UP 순위를 실시간으로 보여주는 지원자 순위 페이지.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#0A0D16; --card:#141A2B; --panel:#0E1420; --line:#1E2637;
+    --text:#F2F4F9; --muted:#8A93A8; --dim:#616C85;
+    --pill:#2B3450; --pill-hi:#3A4568; --edge:#252E44;
+    --gold:#FFD166; --cut:#7C8CFF;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);}
+  body{
+    color:var(--text); padding:28px 20px 80px;
+    font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  /* ---------- 머리말 카드 ---------- */
+  .hero{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;
+  }
+  .hero h1{margin:0 0 10px;font-size:32px;font-weight:900;letter-spacing:-.04em;line-height:1.15;}
+  .hero p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.85;}
+  .hero p b{color:var(--text);font-weight:700;}
+  .clock{
+    background:rgba(255,255,255,.03);border:1px solid var(--edge);border-radius:12px;
+    padding:14px 22px;text-align:center;min-width:290px;
+  }
+  .clock .cap{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;}
+  .clock .units{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .clock .n{font-size:27px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1.1;}
+  .clock .u{font-size:11px;color:var(--dim);margin-top:3px;}
+  .clock.over .n{color:var(--dim);}
+
+  /* ---------- 표 ---------- */
+  .table{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .thead,.trow{
+    display:grid;grid-template-columns:70px minmax(0,1fr) 190px 130px;
+    align-items:center;gap:14px;padding:0 22px;
+  }
+  .thead{height:58px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015);}
+  .th{font-size:12.5px;font-weight:700;color:var(--muted);}
+  .th.c{text-align:center;}
+  .th.r{text-align:right;}
+  .th button{
+    font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);
+    background:none;border:none;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px;
+  }
+  .th button:hover{color:var(--text);}
+  .th button .ar{font-size:9px;opacity:.55;}
+  .th button.on{color:var(--text);}
+  .th button.on .ar{opacity:1;color:var(--cut);}
+
+  .search{position:relative;max-width:250px;}
+  .search input{
+    width:100%;font:inherit;font-size:12.5px;color:var(--text);
+    background:rgba(255,255,255,.04);border:1px solid var(--edge);border-radius:9px;
+    padding:8px 10px 8px 30px;
+  }
+  .search input::placeholder{color:var(--dim);}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5;}
+  .namecol{display:flex;align-items:center;gap:14px;}
+
+  .trow{height:65px;border-bottom:1px solid rgba(255,255,255,.045);}
+  .trow:last-child{border-bottom:none;}
+  .trow:hover{background:rgba(255,255,255,.022);}
+  .rank{
+    font-size:19px;font-weight:800;font-style:italic;text-align:center;
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  }
+  .trow.r1 .rank{color:var(--gold);}
+  .trow.r2 .rank{color:#D7DEF0;}
+  .trow.r3 .rank{color:#E0A177;}
+  .who{display:flex;align-items:center;gap:13px;min-width:0;}
+  .ava{
+    position:relative;width:38px;height:38px;border-radius:50%;overflow:hidden;flex:none;
+    background:#212940;border:1px solid var(--edge);
+  }
+  .ava .ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:800;color:var(--dim);z-index:0;}
+  .ava img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover;display:block;background:#212940;}
+  .nm{font-size:15px;font-weight:700;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dt{font-size:12.5px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums;}
+  .upcell{display:flex;justify-content:flex-end;}
+  .up{
+    display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+    background:var(--pill);border:1px solid var(--edge);border-radius:9px;
+    padding:8px 14px;color:var(--text);font-size:14.5px;font-weight:800;
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;transition:background .13s ease;
+  }
+  .up:hover{background:var(--pill-hi);}
+  .up svg{opacity:.75;flex:none;}
+
+  /* 확정선 */
+  .cutline{
+    display:flex;align-items:center;gap:12px;padding:9px 22px;
+    background:rgba(124,140,255,.07);border-top:1px solid rgba(124,140,255,.3);
+    border-bottom:1px solid rgba(124,140,255,.3);
+  }
+  .cutline span{font-size:11.5px;font-weight:800;color:var(--cut);letter-spacing:.06em;}
+  .cutline i{flex:1;height:1px;background:rgba(124,140,255,.25);}
+
+  .msg{padding:44px 22px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.9;white-space:pre-line;}
+  .msg.err{color:#FF9A8B;}
+  .foot{margin-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-size:11.5px;color:var(--dim);}
+  .foot a{color:var(--muted);}
+
+  /* ---------- 설정 (주소에 post가 없을 때만) ---------- */
+  .setup{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;}
+  .setup h2{margin:0 0 14px;font-size:12px;font-weight:800;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;}
+  .f{display:flex;flex-direction:column;gap:5px;margin-bottom:11px;}
+  .f label{font-size:11.5px;font-weight:700;color:var(--muted);}
+  .f input,.f select{font:inherit;font-size:13px;color:var(--text);background:var(--panel);
+    border:1px solid var(--edge);border-radius:9px;padding:8px 10px;width:100%;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
+  .btns button{font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--pill);
+    border:1px solid var(--edge);border-radius:9px;padding:9px 15px;cursor:pointer;}
+  .btns button:hover{background:var(--pill-hi);}
+  .out{margin-top:11px;font-size:11.5px;color:var(--muted);word-break:break-all;line-height:1.7;}
+
+  /* 켜기/끄기 스위치 */
+  .cutrow{display:flex;align-items:center;gap:9px;}
+  .cutrow input[type=number]{flex:1;min-width:0;}
+  .cutrow input[type=number]:disabled{opacity:.4;cursor:not-allowed;}
+  .sw{display:inline-flex;align-items:center;gap:6px;flex:none;cursor:pointer;
+    font-size:12.5px;font-weight:700;color:var(--muted);user-select:none;
+    background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:8px 11px;}
+  .sw input{width:15px;height:15px;accent-color:var(--cut);cursor:pointer;margin:0;}
+  .sw.on{color:var(--text);border-color:var(--cut);}
+
+  @media (max-width:760px){
+    .thead,.trow{grid-template-columns:46px minmax(0,1fr) 100px;padding:0 14px;gap:10px;}
+    .thead .th.date,.trow .dt{display:none;}
+    .hero{padding:20px;}
+    .hero h1{font-size:25px;}
+    .clock{min-width:0;width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="setup" id="setup" style="display:none">
+    <h2>페이지 만들기</h2>
+    <div class="f">
+      <label>SOOP 게시글 주소</label>
+      <input id="postUrl" placeholder="https://www.sooplive.com/station/아이디/post/글번호">
+    </div>
+    <div class="f">
+      <label>중계 주소 (데이터가 막힐 때)</label>
+      <input id="relay" placeholder="https://내주소.workers.dev/?u=">
+    </div>
+    <div class="g2">
+      <div class="f"><label>제목</label><input id="ttl" value="지원자 UP 순위"></div>
+      <div class="f">
+        <label>확정 인원</label>
+        <div class="cutrow">
+          <label class="sw on" id="swBox"><input type="checkbox" id="cutOn" checked><span>표시</span></label>
+          <input id="cut" type="number" value="25" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>마감 일시</label><input id="dl" type="datetime-local"></div>
+      <div class="f"><label>갱신 주기</label>
+        <select id="itv"><option value="15">15초</option><option value="30" selected>30초</option>
+        <option value="60">1분</option></select></div>
+    </div>
+    <div class="btns">
+      <button id="apply">미리보기</button>
+      <button id="make">공유 주소 만들기</button>
+      <button id="copy">복사</button>
+    </div>
+    <div class="out" id="out"></div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <h1 id="title">지원자 UP 순위</h1>
+      <p id="sub"></p>
+    </div>
+    <div class="clock" id="clock" style="display:none">
+      <div class="cap">지원 마감까지</div>
+      <div class="units">
+        <div><div class="n" id="cd">0</div><div class="u">일</div></div>
+        <div><div class="n" id="ch">00</div><div class="u">시간</div></div>
+        <div><div class="n" id="cm">00</div><div class="u">분</div></div>
+        <div><div class="n" id="cs">00</div><div class="u">초</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table">
+    <div class="thead">
+      <div class="th c">순위</div>
+      <div class="namecol">
+        <div class="th">스트리머명</div>
+        <div class="search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" placeholder="스트리머명을 입력해주세요">
+        </div>
+      </div>
+      <div class="th c date"><button data-sort="date">등록일자 <span class="ar">▼</span></button></div>
+      <div class="th r"><button data-sort="up" class="on">추천수 <span class="ar">▼</span></button></div>
+    </div>
+    <div id="body"><div class="msg" id="msg">불러오는 중입니다.</div></div>
+  </div>
+
+  <div class="foot">
+    <span id="stat"></span>
+    <span>추천수를 누르면 SOOP 게시글로 이동합니다.</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i);};
+  var P=new URLSearchParams(location.search);
+
+  var S={
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:30,deadline:null,
+    items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
+  };
+
+  /* ---------- 주소 ---------- */
+  var TMPL='https://api-channel.sooplive.com/v1.1/channel/{id}/post/{no}/comment?page={page}&orderBy=reg_date&cCommentNo=0';
+  function parsePost(u){
+    var m=String(u||'').match(/\/station\/([^/?#]+)\/(?:post|board)\/(\d+)/);
+    return m?{id:m[1],no:m[2]}:null;
+  }
+  function postLink(){ return 'https://www.sooplive.com/station/'+S.id+'/post/'+S.no; }
+  function apiUrl(page){
+    var u=TMPL.replace('{id}',encodeURIComponent(S.id))
+              .replace('{no}',encodeURIComponent(S.no))
+              .replace('{page}',String(page));
+    return S.relay?(S.relay+encodeURIComponent(u)):u;
+  }
+
+  /* ---------- 응답 해석 ---------- */
+  var NICK=['user_nick','userNick','nickname','nick','writer_nick','name','userName'];
+  var UP=['like_cnt','likeCnt','likeCount','up_cnt','upCnt','recommend_cnt','recommendCnt','vote_cnt','like','up'];
+  var UID=['user_id','userId','userid','writer_id','id'];
+  var DATE=['reg_date','regDate','regDatetime','created_at','createdAt','write_date','wr_date','date'];
+  var IMG=['profile_image','profileImage','profileImageUrl','profile_img','profileImg','photo','thumbnail'];
+
+  function pick(o,c,num){
+    for(var i=0;i<c.length;i++){var k=c[i];if(!(k in o))continue;var v=o[k];
+      if(num){ if(typeof v==='number')return k; if(typeof v==='string'&&v!==''&&!isNaN(Number(v)))return k; }
+      else if(typeof v==='string'&&v.trim()!=='')return k;}
+    return null;
+  }
+  function pickImg(o){
+    for(var i=0;i<IMG.length;i++){var v=o[IMG[i]];
+      if(typeof v==='string'&&v&&(/\.(jpe?g|png|gif|webp)/i.test(v)||v.indexOf('//')>=0))return IMG[i];}
+    return null;
+  }
+  function arrs(n,d,out){
+    if(!n||d>5)return out;
+    if(Array.isArray(n)){ if(n.length&&typeof n[0]==='object'&&n[0])out.push(n);
+      for(var i=0;i<Math.min(n.length,3);i++)arrs(n[i],d+1,out); }
+    else if(typeof n==='object'){ for(var k in n){try{arrs(n[k],d+1,out);}catch(e){}} }
+    return out;
+  }
+  function analyze(j){
+    var l=arrs(j,0,[]),best=null;
+    for(var i=0;i<l.length;i++){
+      var a=l[i],s=null;
+      for(var x=0;x<a.length;x++){if(a[x]&&typeof a[x]==='object'){s=a[x];break;}}
+      if(!s)continue;
+      var nk=pick(s,NICK,false),uk=pick(s,UP,true);
+      if(!nk||!uk)continue;
+      if(!best||a.length>best.a.length)
+        best={a:a,nk:nk,uk:uk,idk:pick(s,UID,false),dk:pick(s,DATE,false),imk:pickImg(s)};
+    }
+    return best;
+  }
+  function avatar(uid,raw){
+    if(raw){var u=String(raw).trim();
+      if(u.indexOf('//')===0)u='https:'+u;
+      if(/^https?:/i.test(u))return u;}
+    if(!uid)return '';
+    return 'https://profile.img.sooplive.com/LOGO/'+uid.slice(0,2).toLowerCase()+'/'+uid+'/'+uid+'.jpg';
+  }
+  function flat(f){
+    var out=[];
+    function push(r){
+      if(!r||typeof r!=='object')return;
+      var nick=String(r[f.nk]==null?'':r[f.nk]).trim();
+      if(!nick)return;
+      var uid=f.idk?String(r[f.idk]==null?'':r[f.idk]):'';
+      out.push({
+        nick:nick, up:Number(r[f.uk])||0, uid:uid,
+        date:f.dk?String(r[f.dk]||''):'',
+        img:avatar(uid,f.imk?r[f.imk]:''),
+        key:uid||('n:'+nick)
+      });
+      for(var k in r){var v=r[k];
+        if(Array.isArray(v)&&v.length&&typeof v[0]==='object'&&v[0]&&(f.nk in v[0]))
+          for(var i=0;i<v.length;i++)push(v[i]);}
+    }
+    for(var i=0;i<f.a.length;i++)push(f.a[i]);
+    return out;
+  }
+
+  /* ---------- 가져오기 ---------- */
+  function load(){
+    if(!S.id)return;
+    var got=[],page=1,lastSig='';
+    function step(){
+      if(page>40)return done();
+      fetch(apiUrl(page),{credentials:'omit',headers:{'Accept':'application/json, text/plain, */*'}})
+        .then(function(r){ if(!r.ok)throw new Error('서버가 '+r.status+'로 응답했습니다.'); return r.json(); })
+        .then(function(j){
+          var f=analyze(j);
+          if(!f){ if(page===1)throw new Error('응답에서 지원자 목록을 못 찾았습니다.'); return done(); }
+          var rows=flat(f);
+          var sig=rows.length+'|'+(rows[0]?rows[0].nick+rows[0].up:'');
+          if(sig===lastSig)return done();
+          lastSig=sig;
+          got=got.concat(rows);
+          if(rows.length<5)return done();
+          page++;step();
+        })
+        .catch(function(e){
+          var m=e.message||String(e);
+          if(/Failed to fetch|NetworkError|CORS|load failed/i.test(m))
+            m='브라우저가 데이터 요청을 막았습니다.\n주소에 중계 주소(relay)를 넣어주세요.';
+          S.err=m;render();
+        });
+    }
+    function done(){
+      // 같은 사람이 여러 번 썼으면 UP 제일 높은 것만
+      var map={};
+      got.forEach(function(r){ if(!map[r.key]||r.up>map[r.key].up)map[r.key]=r; });
+      S.items=Object.keys(map).map(function(k){return map[k];});
+      S.items.sort(function(a,b){return b.up-a.up;});
+      S.items.forEach(function(r,i){ r.rank=i+1; });
+      S.err='';S.lastAt=new Date();render();
+    }
+    step();
+  }
+
+  /* ---------- 그리기 ---------- */
+  function view(){
+    var rows=S.items.slice();
+    if(S.q){
+      var q=S.q.toLowerCase();
+      rows=rows.filter(function(r){return r.nick.toLowerCase().indexOf(q)>=0;});
+    }
+    rows.sort(function(a,b){
+      if(S.sortBy==='date')return (a.date<b.date?-1:a.date>b.date?1:0)*S.sortDir;
+      return (a.up-b.up)*S.sortDir;
+    });
+    return rows;
+  }
+
+  function render(){
+    var body=$('body');
+    if(S.err){ body.innerHTML='';
+      var e=document.createElement('div');e.className='msg err';e.textContent=S.err;body.appendChild(e);
+      $('stat').textContent='';return; }
+    if(!S.items.length){ body.innerHTML='<div class="msg">아직 지원자가 없습니다.</div>';return; }
+
+    var rows=view();
+    body.innerHTML='';
+    var cutDrawn=false;
+    rows.forEach(function(r,i){
+      // 확정선: UP 순위 기준이고 정렬이 기본일 때만
+      if(!cutDrawn && S.cut>0 && !S.q && S.sortBy==='up' && S.sortDir===-1 && r.rank===S.cut+1){
+        var c=document.createElement('div');
+        c.className='cutline';
+        c.innerHTML='<i></i><span>여기까지 '+S.cut+'명 확정</span><i></i>';
+        body.appendChild(c);
+        cutDrawn=true;
+      }
+      var el=document.createElement('div');
+      el.className='trow'+(r.rank===1?' r1':r.rank===2?' r2':r.rank===3?' r3':'');
+      el.innerHTML=
+        '<div class="rank">'+r.rank+'</div>'+
+        '<div class="who"><div class="ava"><span class="ini"></span></div><div class="nm"></div></div>'+
+        '<div class="dt"></div>'+
+        '<div class="upcell"><a class="up" target="_blank" rel="noopener">'+
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+          '<path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/>'+
+          '<path d="M7 11l4.2-7.4a1.6 1.6 0 0 1 3 .8V9h4.3a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17 20H7z"/></svg>'+
+          '<span class="v"></span></a></div>';
+      el.querySelector('.ini').textContent=r.nick.slice(0,1);
+      el.querySelector('.nm').textContent=r.nick;
+      el.querySelector('.dt').textContent=r.date;
+      el.querySelector('.v').textContent=r.up.toLocaleString('ko-KR');
+      el.querySelector('.up').href=postLink();
+      if(r.img){
+        var im=document.createElement('img');
+        im.loading='lazy';im.alt='';im.src=r.img;
+        im.addEventListener('error',function(){im.remove();});
+        el.querySelector('.ava').appendChild(im);
+      }
+      body.appendChild(el);
+    });
+
+    $('stat').textContent='지원자 '+S.items.length+'명'+
+      (S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
+  }
+
+  /* ---------- 마감 시계 ---------- */
+  function tick(){
+    if(!S.deadline)return;
+    var box=$('clock');box.style.display='';
+    var left=S.deadline-Date.now();
+    box.classList.toggle('over',left<=0);
+    if(left<0)left=0;
+    var s=Math.floor(left/1000);
+    var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),ss=s%60;
+    var p=function(n){return n<10?'0'+n:''+n;};
+    $('cd').textContent=d;$('ch').textContent=p(h);$('cm').textContent=p(m);$('cs').textContent=p(ss);
+  }
+
+  /* ---------- 설정 적용 ---------- */
+  function applyParams(src){
+    var p=parsePost(src.post);
+    if(p){S.id=p.id;S.no=p.no;}
+    S.relay=src.relay||'';
+    S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
+    S.cut = S.cutOn ? Number(src.cut||0) : 0;
+    S.interval=Number(src.interval||30);
+    S.deadline=src.deadline?new Date(src.deadline).getTime():null;
+    if(src.title)$('title').textContent=src.title;
+    $('sub').innerHTML = S.cut>0
+      ? ('UP 순위 상위 <b>'+S.cut+'명</b>까지 참가가 확정됩니다.<br>'+(S.cut+1)+'위 이하 지원자들은 추첨을 통해 참가가 확정됩니다.')
+      : 'UP이 많은 순서대로 지원자를 보여줍니다.';
+    document.title=(src.title||'지원자 UP 순위');
+    if(S.timer)clearInterval(S.timer);
+    if(S.id){ load(); S.timer=setInterval(load,S.interval*1000); }
+    tick();
+  }
+
+  /* ---------- 이벤트 ---------- */
+  $('q').addEventListener('input',function(){S.q=this.value.trim();render();});
+  document.querySelectorAll('[data-sort]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var k=this.dataset.sort;
+      if(S.sortBy===k)S.sortDir*=-1; else {S.sortBy=k;S.sortDir=-1;}
+      document.querySelectorAll('[data-sort]').forEach(function(x){
+        x.classList.toggle('on',x.dataset.sort===S.sortBy);
+        x.querySelector('.ar').textContent=(x.dataset.sort===S.sortBy&&S.sortDir===1)?'▲':'▼';
+      });
+      render();
+    });
+  });
+
+  if(P.get('post')){
+    applyParams({
+      post:P.get('post'), relay:P.get('relay'), cut:P.get('cut'), cutOn:P.get('cutOn'),
+      interval:P.get('interval'), deadline:P.get('deadline'), title:P.get('title')
+    });
+  } else {
+    var syncSw=function(){
+      var on=$('cutOn').checked;
+      $('swBox').classList.toggle('on',on);
+      $('cut').disabled=!on;
+    };
+    $('cutOn').addEventListener('change',syncSw);
+    syncSw();
+    $('setup').style.display='';
+    $('msg').textContent='위에서 게시글 주소를 넣고 미리보기를 눌러주세요.';
+    var read=function(){
+      return { post:$('postUrl').value, relay:$('relay').value.trim(),
+               cut:$('cut').value, cutOn:$('cutOn').checked?'1':'0',
+               interval:$('itv').value, title:$('ttl').value,
+               deadline:$('dl').value?new Date($('dl').value).toISOString():'' };
+    };
+    $('apply').addEventListener('click',function(){ applyParams(read()); });
+    $('make').addEventListener('click',function(){
+      var v=read();
+      if(!parsePost(v.post)){ $('out').textContent='게시글 주소를 알아볼 수 없습니다.';return; }
+      var q=new URLSearchParams();
+      q.set('post',v.post);
+      if(v.relay)q.set('relay',v.relay);
+      q.set('cut',v.cut);q.set('cutOn',v.cutOn);
+      q.set('interval',v.interval);q.set('title',v.title);
+      if(v.deadline)q.set('deadline',v.deadline);
+      $('out').textContent=location.origin+location.pathname+'?'+q.toString();
+    });
+    $('copy').addEventListener('click',function(){
+      var t=$('out').textContent;
+      if(!t||t.indexOf('http')!==0)return;
+      if(navigator.clipboard)navigator.clipboard.writeText(t);
+      $('copy').textContent='복사됨';
+      setTimeout(function(){$('copy').textContent='복사';},1400);
+    });
+  }
+
+  setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>

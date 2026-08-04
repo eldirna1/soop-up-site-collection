@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코드 발급 신청</title>
+<meta name="description" content="SOOP 스트리머가 대회 페이지 발급 코드를 신청하는 창구.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#0A0D16; --card:#141A2B; --panel:#0E1420; --line:#1E2637;
+    --text:#F2F4F9; --muted:#8A93A8; --dim:#616C85;
+    --pill:#2B3450; --pill-hi:#3A4568; --edge:#252E44;
+    --gold:#FFD166; --cut:#7C8CFF; --ok:#5FD3A0; --warn:#FF9A8B;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);}
+  body{
+    color:var(--text); padding:28px 20px 80px;
+    font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;}
+
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;}
+  .hero h1{margin:0 0 10px;font-size:29px;font-weight:900;letter-spacing:-.04em;line-height:1.15;}
+  .hero p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.85;}
+  .hero p b{color:var(--text);font-weight:700;}
+
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:22px 24px;margin-top:14px;}
+  .step > h2{margin:0 0 4px;font-size:16px;font-weight:800;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:10px;}
+  .step > h2 .no{
+    flex:none;width:24px;height:24px;border-radius:8px;background:var(--pill);
+    border:1px solid var(--edge);color:var(--cut);
+    font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;
+  }
+  .step > .lead{margin:0 0 16px;padding-left:34px;font-size:12.5px;color:var(--muted);line-height:1.8;}
+
+  .f{display:flex;flex-direction:column;gap:5px;margin-bottom:11px;}
+  .f label{font-size:11.5px;font-weight:700;color:var(--muted);}
+  .f .hint{font-size:11px;color:var(--dim);line-height:1.7;}
+  .f input,.f select,.f textarea{
+    font:inherit;font-size:13px;color:var(--text);background:var(--panel);
+    border:1px solid var(--edge);border-radius:9px;padding:9px 11px;width:100%;
+  }
+  .f input::placeholder,.f textarea::placeholder{color:var(--dim);}
+  .f textarea{min-height:78px;resize:vertical;line-height:1.7;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
+  button{font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--pill);
+    border:1px solid var(--edge);border-radius:9px;padding:10px 16px;cursor:pointer;
+    transition:background .13s ease;}
+  button:hover{background:var(--pill-hi);}
+  button.main{background:var(--cut);border-color:var(--cut);color:#0A0D16;}
+  button.main:hover{background:#96A2FF;}
+
+  /* 인증번호 판 */
+  .vbox{
+    background:var(--panel);border:1px solid var(--edge);border-radius:12px;
+    padding:18px 20px;text-align:center;margin:4px 0 14px;
+  }
+  .vbox .cap{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:9px;}
+  .vbox .code{
+    font-size:31px;font-weight:900;letter-spacing:.18em;color:var(--gold);
+    font-variant-numeric:tabular-nums;line-height:1.2;
+  }
+  .vbox .code.wait{font-size:15px;letter-spacing:0;color:var(--dim);font-weight:700;}
+  .vbox .note{font-size:11.5px;color:var(--dim);margin-top:9px;line-height:1.7;}
+
+  .howto{margin:0;padding-left:34px;list-style:none;counter-reset:h;}
+  .howto li{position:relative;font-size:12.5px;color:var(--muted);line-height:1.85;
+    padding-left:18px;margin-bottom:5px;counter-increment:h;}
+  .howto li::before{content:counter(h)".";position:absolute;left:0;color:var(--cut);font-weight:800;}
+  .howto b{color:var(--text);font-weight:700;}
+
+  .paper{
+    background:var(--panel);border:1px solid var(--edge);border-radius:11px;
+    padding:15px 16px;font-size:12.5px;line-height:1.9;color:var(--muted);
+    white-space:pre-wrap;word-break:break-all;min-height:60px;
+  }
+  .paper.empty{color:var(--dim);}
+  .say{margin-top:10px;font-size:12px;line-height:1.8;color:var(--muted);}
+  .say.ok{color:var(--ok);}
+  .say.no{color:var(--warn);}
+  .say a{color:var(--cut);}
+
+  .where{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .where a{
+    text-decoration:none;font-size:12.5px;font-weight:700;color:var(--text);
+    background:var(--pill);border:1px solid var(--edge);border-radius:9px;padding:10px 15px;
+  }
+  .where a:hover{background:var(--pill-hi);}
+
+  .rules{margin:0;padding-left:34px;list-style:none;}
+  .rules li{position:relative;font-size:12.5px;color:var(--muted);line-height:1.85;padding-left:15px;}
+  .rules li::before{content:"·";position:absolute;left:2px;color:var(--cut);font-weight:900;}
+
+  .foot{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;text-align:center;}
+
+  .admin{border-color:var(--gold);}
+  .admin > h2 .no{color:var(--gold);}
+
+  @media (max-width:640px){
+    .g2{grid-template-columns:1fr;}
+    .hero{padding:20px;} .hero h1{font-size:24px;}
+    .step{padding:18px 16px;}
+    .step > .lead,.howto,.rules{padding-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1 id="pageTitle">코드 발급 신청</h1>
+    <p>대회 순위 페이지를 만들려면 <b>발급 코드</b>가 필요합니다.<br>
+       아래 순서대로 진행하면 신청서가 만들어집니다. 확인 후 코드를 보내드립니다.</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="step">
+    <h2><span class="no">1</span>방송국 정보 적기</h2>
+    <p class="lead">SOOP 방송국 주소만 있으면 됩니다. 나머지는 연락을 위한 정보입니다.</p>
+
+    <div class="f">
+      <label>SOOP 방송국 주소 또는 아이디</label>
+      <input id="sid" placeholder="https://ch.sooplive.co.kr/아이디  또는  아이디">
+      <span class="hint" id="sidHint"></span>
+    </div>
+    <div class="g2">
+      <div class="f"><label>방송에서 쓰는 이름</label><input id="nick" placeholder="예: 엘디르나"></div>
+      <div class="f"><label>연락 받을 곳</label><input id="contact" placeholder="디스코드 아이디 또는 이메일"></div>
+    </div>
+    <div class="f">
+      <label>어떤 대회에 쓸 건가요</label>
+      <textarea id="purpose" placeholder="대회 이름, 예상 인원, 진행 예정일을 적어주세요."></textarea>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="step">
+    <h2><span class="no">2</span>본인 방송국이 맞는지 확인</h2>
+    <p class="lead">아이디를 적으면 그 아이디 전용 인증번호가 나옵니다.
+       방송국 주인만 할 수 있는 일을 시켜서 본인인지 확인하는 방식입니다.</p>
+
+    <div class="vbox">
+      <div class="cap">내 인증번호</div>
+      <div class="code wait" id="vnum">위에 아이디를 먼저 적어주세요</div>
+      <div class="note">이 번호는 아이디마다 다르게 나오고, 다시 열어도 똑같이 나옵니다.</div>
+    </div>
+
+    <ol class="howto">
+      <li>SOOP 방송국 관리 화면에서 <b>방송국 소개글</b>을 엽니다.</li>
+      <li>소개글 아무 곳에나 <b>인증 <span id="vnumInline">------</span></b> 이라고 한 줄 넣고 저장합니다.</li>
+      <li>저장된 소개글이 보이도록 <b>화면을 캡처</b>합니다.</li>
+      <li>신청 결과를 받은 뒤에는 그 줄을 지워도 됩니다.</li>
+    </ol>
+  </div>
+
+  <!-- 3 -->
+  <div class="step">
+    <h2><span class="no">3</span>신청서 보내기</h2>
+    <p class="lead">아래 신청서를 복사해서 캡처 사진과 함께 보내주세요.</p>
+
+    <div class="paper empty" id="paper">1번을 채우면 신청서가 여기에 만들어집니다.</div>
+    <div class="btns">
+      <button class="main" id="build">신청서 만들기</button>
+      <button id="copy">복사</button>
+    </div>
+    <div class="say" id="say"></div>
+
+    <div class="where">
+      <a id="toNote" href="#" target="_blank" rel="noopener">SOOP 쪽지로 보내기</a>
+      <a id="toMail" href="#">메일로 보내기</a>
+    </div>
+  </div>
+
+  <!-- 안내 -->
+  <div class="step">
+    <h2><span class="no">i</span>발급 기준</h2>
+    <p class="lead">아래를 모두 만족하면 보통 하루 안에 코드를 보내드립니다.</p>
+    <ul class="rules">
+      <li>실제로 열려 있는 SOOP 방송국일 것</li>
+      <li>소개글에 인증번호가 들어간 캡처를 보낼 것</li>
+      <li>최근 30일 안에 방송 기록이 있을 것</li>
+      <li>방송국을 만든 지 30일이 지났을 것</li>
+      <li>한 아이디당 코드는 하나 (대회가 여러 개여도 같은 코드로 씁니다)</li>
+      <li>코드를 다른 사람에게 넘기면 회수됩니다</li>
+    </ul>
+  </div>
+
+  <!-- 관리자 -->
+  <div class="step admin" id="adminBox" style="display:none">
+    <h2><span class="no">★</span>관리자 확인</h2>
+    <p class="lead">신청자가 적어 보낸 아이디를 넣으면, 나와야 할 인증번호와 발급할 코드가 같이 나옵니다.</p>
+    <div class="f">
+      <label>신청자 아이디</label>
+      <input id="aid" placeholder="아이디만 적어주세요">
+    </div>
+    <div class="g2">
+      <div class="vbox"><div class="cap">인증번호가 이것과 같아야 함</div>
+        <div class="code wait" id="avnum">------</div></div>
+      <div class="vbox"><div class="cap">발급할 코드</div>
+        <div class="code wait" id="acode" style="font-size:20px;letter-spacing:.06em">------</div></div>
+    </div>
+    <div class="where">
+      <button id="acopy">코드 복사</button>
+      <a id="agov" href="#" target="_blank" rel="noopener">방송국 열어보기</a>
+    </div>
+    <div class="say" id="asay"></div>
+  </div>
+
+  <div class="foot">
+    답변까지 보통 하루 정도 걸립니다. 3일이 지나도 연락이 없으면 다시 보내주세요.
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $=function(i){return document.getElementById(i);};
+  var P=new URLSearchParams(location.search);
+
+  /* ===== 여기만 내 정보로 바꾸면 됩니다 ===== */
+  var ADMIN_ID   = 'eldirna';                 // 내 SOOP 아이디 (쪽지 링크에 씁니다)
+  var ADMIN_MAIL = '';                        // 메일로도 받고 싶으면 주소를 적으세요
+  var SECRET     = 'change-me-please-2026';   // 코드 만드는 데 쓰는 나만의 문구. 꼭 바꾸세요.
+  /* ======================================== */
+
+  /* ---------- 아이디 뽑기 ---------- */
+  function readId(raw){
+    var s=String(raw||'').trim();
+    if(!s)return '';
+    var m=s.match(/(?:ch\.sooplive\.co\.kr|bj\.sooplive\.co\.kr|sooplive\.com\/station)\/([A-Za-z0-9_-]+)/i);
+    if(m)return m[1].toLowerCase();
+    m=s.match(/^[A-Za-z0-9_-]{3,20}$/);
+    return m?s.toLowerCase():'';
+  }
+  function station(id){ return 'https://ch.sooplive.co.kr/'+id; }
+
+  /* ---------- 번호 만들기 ---------- */
+  function hash(s){
+    var h=2166136261>>>0;
+    for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+    return h>>>0;
+  }
+  function verifyNum(id){
+    var n=hash('soop-verify::'+id)%1000000;
+    return ('00000'+n).slice(-6);
+  }
+  function issueCode(id){
+    var a=hash(SECRET+'::'+id).toString(36).toUpperCase();
+    var b=hash(id+'::'+SECRET+'::2').toString(36).toUpperCase();
+    var s=(a.split('').reverse().join('')+b.split('').reverse().join('')+'XXXXXXXX')
+            .replace(/[^A-Z0-9]/g,'');
+    return 'SOOP-'+s.slice(0,4)+'-'+s.slice(4,8);
+  }
+
+  /* ---------- 1·2단계 ---------- */
+  function refresh(){
+    var id=readId($('sid').value);
+    if(id){
+      $('sidHint').innerHTML='확인된 아이디: <b style="color:var(--text)">'+id+'</b>';
+      $('vnum').textContent=verifyNum(id);
+      $('vnum').classList.remove('wait');
+      $('vnumInline').textContent=verifyNum(id);
+    }else{
+      $('sidHint').textContent=$('sid').value.trim()?'주소나 아이디를 알아볼 수 없습니다.':'';
+      $('vnum').textContent='위에 아이디를 먼저 적어주세요';
+      $('vnum').classList.add('wait');
+      $('vnumInline').textContent='------';
+    }
+  }
+  $('sid').addEventListener('input',refresh);
+
+  /* ---------- 3단계 ---------- */
+  var made='';
+  function build(){
+    var id=readId($('sid').value);
+    if(!id){ tell('no','방송국 주소 또는 아이디를 먼저 적어주세요.'); return; }
+    var nick=$('nick').value.trim()||'(안 적음)';
+    var contact=$('contact').value.trim();
+    if(!contact){ tell('no','연락 받을 곳을 적어주세요. 코드를 보낼 방법이 없습니다.'); return; }
+    var purpose=$('purpose').value.trim()||'(안 적음)';
+
+    made=
+      '[대회 페이지 코드 발급 신청]\n'+
+      '아이디: '+id+'\n'+
+      '방송국: '+station(id)+'\n'+
+      '이름: '+nick+'\n'+
+      '연락처: '+contact+'\n'+
+      '인증번호: '+verifyNum(id)+'\n'+
+      '용도: '+purpose+'\n'+
+      '보낸 날짜: '+new Date().toLocaleDateString('ko-KR')+'\n'+
+      '※ 소개글에 인증번호를 넣은 캡처를 함께 보냅니다.';
+
+    $('paper').textContent=made;
+    $('paper').classList.remove('empty');
+    tell('ok','신청서가 만들어졌습니다. 복사해서 캡처와 함께 보내주세요.');
+
+    $('toNote').href='https://note.sooplive.co.kr/note/send?szTo='+encodeURIComponent(ADMIN_ID);
+    $('toMail').href = ADMIN_MAIL
+      ? 'mailto:'+ADMIN_MAIL+'?subject='+encodeURIComponent('코드 발급 신청 - '+id)+
+        '&body='+encodeURIComponent(made)
+      : '#';
+    $('toMail').style.display = ADMIN_MAIL ? '' : 'none';
+  }
+  function tell(k,t){ var e=$('say'); e.className='say '+(k||''); e.textContent=t; }
+
+  $('build').addEventListener('click',build);
+  $('copy').addEventListener('click',function(){
+    if(!made){ tell('no','먼저 신청서를 만들어주세요.'); return; }
+    if(navigator.clipboard)navigator.clipboard.writeText(made);
+    $('copy').textContent='복사됨';
+    setTimeout(function(){$('copy').textContent='복사';},1400);
+  });
+
+  /* ---------- 관리자 ---------- */
+  if(P.get('admin')==='1'){
+    $('adminBox').style.display='';
+    $('aid').addEventListener('input',function(){
+      var id=readId(this.value);
+      if(!id){ $('avnum').textContent='------';$('acode').textContent='------';
+        $('avnum').classList.add('wait');$('acode').classList.add('wait');
+        $('asay').textContent='';return; }
+      $('avnum').textContent=verifyNum(id);
+      $('acode').textContent=issueCode(id);
+      $('avnum').classList.remove('wait');$('acode').classList.remove('wait');
+      $('agov').href=station(id);
+      $('asay').className='say';
+      $('asay').textContent='소개글의 번호가 위와 같으면 본인이 맞습니다.';
+    });
+    $('acopy').addEventListener('click',function(){
+      var t=$('acode').textContent;
+      if(t.indexOf('SOOP-')!==0)return;
+      if(navigator.clipboard)navigator.clipboard.writeText(t);
+      $('acopy').textContent='복사됨';
+      setTimeout(function(){$('acopy').textContent='코드 복사';},1400);
+    });
+  }
+
+  refresh();
+})();
+</script>
+</body>
+</html>

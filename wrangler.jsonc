@@ -1,0 +1,8 @@
+{
+  "name": "soop-up",
+  "compatibility_date": "2026-08-05",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./"
+  }
+}

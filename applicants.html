@@ -237,7 +237,10 @@
   /* ---------- 주소 ---------- */
   var TMPL='https://api-channel.sooplive.com/v1.1/channel/{id}/post/{no}/comment?page={page}&orderBy=reg_date&cCommentNo=0';
   function parsePost(u){
-    var m=String(u||'').match(/\/station\/([^/?#]+)\/(?:post|board)\/(\d+)/);
+    var s=String(u||'').trim();
+    var m=s.match(/\/station\/([^/?#]+)\/(?:post|board)\/(\d+)/);
+    if(m)return {id:m[1],no:m[2]};
+    m=s.match(/^([A-Za-z0-9_-]+)[\/:](\d+)$/);
     return m?{id:m[1],no:m[2]}:null;
   }
   function postLink(){ return 'https://www.sooplive.com/station/'+S.id+'/post/'+S.no; }
@@ -460,10 +463,11 @@
     });
   });
 
-  if(P.get('post')){
+  var G=function(s,l){var v=P.get(s);return v!=null?v:P.get(l);};
+  if(G('p','post')){
     applyParams({
-      post:P.get('post'), relay:P.get('relay'), cut:P.get('cut'), cutOn:P.get('cutOn'),
-      interval:P.get('interval'), deadline:P.get('deadline'), title:P.get('title')
+      post:G('p','post'), relay:G('r','relay'), cut:G('c','cut'), cutOn:P.get('cutOn'),
+      interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title')
     });
   } else {
     var syncSw=function(){
@@ -479,18 +483,19 @@
       return { post:$('postUrl').value, relay:$('relay').value.trim(),
                cut:$('cut').value, cutOn:$('cutOn').checked?'1':'0',
                interval:$('itv').value, title:$('ttl').value,
-               deadline:$('dl').value?new Date($('dl').value).toISOString():'' };
+               deadline:$('dl').value||'' };
     };
     $('apply').addEventListener('click',function(){ applyParams(read()); });
     $('make').addEventListener('click',function(){
-      var v=read();
-      if(!parsePost(v.post)){ $('out').textContent='게시글 주소를 알아볼 수 없습니다.';return; }
+      var v=read(), pp=parsePost(v.post);
+      if(!pp){ $('out').textContent='게시글 주소를 알아볼 수 없습니다.';return; }
       var q=new URLSearchParams();
-      q.set('post',v.post);
-      if(v.relay)q.set('relay',v.relay);
-      q.set('cut',v.cut);q.set('cutOn',v.cutOn);
-      q.set('interval',v.interval);q.set('title',v.title);
-      if(v.deadline)q.set('deadline',v.deadline);
+      q.set('p',pp.id+'/'+pp.no);
+      if(v.relay)q.set('r',v.relay);
+      q.set('c',v.cutOn==='1'?String(Number(v.cut)||0):'0');
+      q.set('i',v.interval);
+      if(v.title&&v.title!=='지원자 UP 순위')q.set('t',v.title);
+      if(v.deadline)q.set('d',v.deadline);
       $('out').textContent=location.origin+location.pathname+'?'+q.toString();
     });
     $('copy').addEventListener('click',function(){

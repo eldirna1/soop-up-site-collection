@@ -289,6 +289,17 @@
   .sw input{width:15px;height:15px;accent-color:var(--cut);cursor:pointer;margin:0;}
   .sw.on{color:var(--text);border-color:var(--cut);}
   #capBox span{font-weight:700;}
+  .memo{background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.28);
+    border-radius:11px;padding:14px 16px;margin-bottom:11px;
+    font-size:11.5px;color:var(--muted);line-height:1.85;}
+  .memo b{color:var(--gold);font-weight:800;}
+  .memo>b{display:block;font-size:12.5px;margin-bottom:6px;}
+  .memo code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;
+    color:var(--gold);background:rgba(255,209,102,.12);border-radius:4px;padding:1px 5px;}
+  .memo .ex{display:block;margin:8px 0;padding:9px 11px;background:var(--panel);
+    border:1px solid var(--edge);border-radius:8px;color:var(--dim);
+    font-size:11px;line-height:1.95;word-break:break-all;}
+  .memo .ex b{color:var(--gold);}
 
   @media (max-width:760px){
     .allwrap{grid-template-columns:minmax(0,1fr);}
@@ -353,7 +364,15 @@
       <label class="sw" id="capBox" style="align-self:flex-start">
         <input type="checkbox" id="capOn"><span>스크린샷 버튼 넣기 (스트리머 전용 링크)</span>
       </label>
-      <span class="ghint">체크하면 그 링크로 들어온 사람만 스크린샷 버튼을 볼 수 있습니다.</span>
+      <span class="ghint">체크하면 만들어지는 주소 뒤에 <b>&amp;x=1</b> 이 붙습니다.</span>
+    </div>
+    <div class="memo">
+      <b>기억해두실 것 — 스크린샷 버튼은 주소로 켜집니다</b>
+      만들어둔 주소 뒤에 <code>&amp;x=1</code> 만 붙이면 스크린샷 버튼이 있는 페이지가 됩니다.
+      위 체크박스는 그걸 대신 붙여주는 것뿐이라, 나중에 직접 붙이셔도 똑같습니다.
+      <span class="ex">…/applicants.html?s=up2026 &nbsp;→&nbsp; 모두에게 주는 주소<br>
+      …/applicants.html?s=up2026<b>&amp;x=1</b> &nbsp;→&nbsp; 스크린샷 버튼이 보이는 주소</span>
+      주소에 <code>?</code> 가 이미 있으면 <code>&amp;x=1</code>, 없으면 <code>?x=1</code> 입니다.
     </div>
     <div class="btns">
       <button id="apply">미리보기</button>

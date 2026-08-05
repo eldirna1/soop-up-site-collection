@@ -261,10 +261,14 @@
   .capbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px 0;}
   .capbar button{font:inherit;font-size:13px;font-weight:800;color:#0A0D16;background:var(--gold);
     border:0;border-radius:10px;padding:10px 18px;cursor:pointer;transition:opacity .13s ease;}
+  .capbar #capCopy{color:var(--text);background:var(--pill);border:1px solid var(--edge);}
+  .capbar #capCopy:hover{background:var(--pill-hi);opacity:1;}
   .capbar button:hover{opacity:.85;}
   .capbar button:disabled{opacity:.5;cursor:default;}
   .capnote{font-size:11.5px;color:var(--dim);line-height:1.6;}
-  .capnote.on{color:var(--gold);}
+  .capmode{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+    font-size:11.5px;font-weight:700;color:var(--dim);}
+  .capmode input{width:14px;height:14px;accent-color:var(--gold);margin:0;cursor:pointer;}
 
   /* 부문 탭 */
   .tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 18px 0;}
@@ -409,7 +413,8 @@
     <div class="tabs" id="tabs" style="display:none"></div>
     <div class="capbar" id="capbar" style="display:none">
       <button id="capBtn">스크린샷 찍기</button>
-      <span class="capnote" id="capNote">순위표를 20위 단위로 나눠서 한 번에 저장합니다.</span>
+      <button id="capCopy">이미지 복사</button>
+      <span class="capnote" id="capNote">찍기는 20위씩 나눠 저장, 복사는 전체를 한 장으로 복사합니다.</span>
     </div>
     <div class="thead" id="thead">
       <div class="th c">순위</div>
@@ -876,10 +881,6 @@
     if(!r.img)return;
     var im=document.createElement('img');
     im.loading='lazy'; im.alt=''; im.referrerPolicy='no-referrer';
-    if(needForShot(r) && DIRECT!==false){
-      im.crossOrigin='anonymous';        // 이렇게 받아야 그림에도 쓸 수 있습니다
-      im.onload=function(){ PIC[r.img]=im; };
-    }
     im.src=r.img;
     im.onerror=function(){ if(im.parentNode)im.parentNode.removeChild(im); };
     box.appendChild(im);
@@ -1167,29 +1168,12 @@
 
     $('capBtn').disabled=true;
 
-    var urls=Object.keys(need)
-      .filter(function(k){ return !PIC[need[k]]; })
-      .map(function(k){ return {key:need[k],url:need[k]}; });
+    var keys=Object.keys(need), pics={}, have=0;
+    keys.forEach(function(k){ if(PIC[need[k]]){ pics[k]=PIC[need[k]]; have++; } });
 
-    var ready;
-    if(!urls.length){
-      capNote('사진 '+plan.length+'장을 만들고 있습니다…',true);
-      ready=Promise.resolve();
-    }else{
-      capNote('프로필 사진 '+urls.length+'장을 마저 받는 중입니다…',true);
-      ready=loadPicsTwice(urls,function(a,b,pass){
-        capNote('프로필 사진 '+(b-urls.length+a)+' / '+Object.keys(need).length+
-                (pass===2?' (못 받은 것 다시 시도 중)':'')+' …',true);
-      });
-    }
-
-    ready
-      .then(function(){
-        var pics={};
-        Object.keys(need).forEach(function(k){ if(PIC[need[k]])pics[k]=PIC[need[k]]; });
-        return pics;
-      })
+    Promise.resolve(pics)
       .then(function(pics){
+        capNote('사진 '+plan.length+'장을 만들고 있습니다…',true);
         var seq=Promise.resolve();
         plan.forEach(function(sh,i){
           seq=seq.then(function(){
@@ -1219,6 +1203,58 @@
         $('capBtn').disabled=false;
       });
   }
+
+  /* ---------- 이미지 복사 (전체를 한 장으로) ---------- */
+  function oneSheet(){
+    var pics={}, title=$('title').textContent||'지원자 UP 순위';
+    var collect=function(rows){ rows.forEach(function(r){ if(r.img&&PIC[r.img])pics[r.key]=PIC[r.img]; }); };
+
+    if(S.groups.length && S.tab==='all'){
+      var cols=S.groups.map(function(g,i){
+        var rows=markHot(upto(S.items.filter(function(r){return r.grp===i;})));
+        collect(rows); return {name:g.name, rows:rows};
+      }).filter(function(c){ return c.rows.length; });
+      if(!cols.length)return null;
+      var maxLen=0; cols.forEach(function(c){ maxLen=Math.max(maxLen,c.rows.length); });
+      var sub='전체 · 1위 ~ '+maxLen+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'');
+      return {cv:sheetAll(cols,0,maxLen,pics,title,sub,1,1)};
+    }
+    var gi = S.groups.length ? S.tab : -1;
+    var name = S.groups.length ? (S.groups[gi]?S.groups[gi].name:'기타') : '';
+    var rows = markHot(upto(S.groups.length
+      ? S.items.filter(function(r){return r.grp===gi;})
+      : S.items.slice()));
+    if(!rows.length)return null;
+    collect(rows);
+    var sub2=(name?name+' · ':'')+'1위 ~ '+rows.length+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'');
+    return {cv:sheetOne(rows,pics,title,sub2,1,1), name:name};
+  }
+
+  function copyImage(){
+    var made=oneSheet();
+    if(!made){ capNote('복사할 순위가 없습니다.'); return; }
+    $('capCopy').disabled=true;
+    capNote('이미지를 만들고 있습니다…',true);
+    made.cv.toBlob(function(b){
+      if(!b){ capNote('이미지를 만들지 못했습니다.'); $('capCopy').disabled=false; return; }
+      if(!(navigator.clipboard&&window.ClipboardItem)){
+        capNote('이 브라우저는 이미지 복사를 지원하지 않습니다. 대신 저장합니다.');
+        saveCanvas(made.cv,'UP순위_전체_'+Date.now()+'.png');
+        $('capCopy').disabled=false; return;
+      }
+      navigator.clipboard.write([new ClipboardItem({'image/png':b})])
+        .then(function(){
+          capNote('복사됐습니다. 붙여넣을 곳에서 Ctrl+V 를 누르세요.',true);
+          $('capCopy').disabled=false;
+        })
+        .catch(function(e){
+          capNote('복사가 막혔습니다. 대신 저장합니다. ('+(e&&e.message||e)+')');
+          saveCanvas(made.cv,'UP순위_전체_'+Date.now()+'.png');
+          $('capCopy').disabled=false;
+        });
+    },'image/png');
+  }
+  $('capCopy').addEventListener('click',copyImage);
 
   $('capBtn').addEventListener('click',shoot);
 

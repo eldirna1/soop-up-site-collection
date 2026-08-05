@@ -22,6 +22,34 @@
     background:var(--card);border:1px solid var(--line);border-radius:16px;
     overflow:hidden;box-shadow:0 10px 34px rgba(0,0,0,.42);
   }
+  body.flat .box{box-shadow:none;}
+  body.clear .box{border-color:rgba(255,255,255,.16);}
+
+  /* 설정 (마우스를 움직여야 나타납니다 — OBS에서는 안 보입니다) */
+  .gear{position:fixed;top:12px;right:12px;z-index:20;
+    width:30px;height:30px;border-radius:9px;cursor:pointer;
+    background:rgba(20,26,43,.9);border:1px solid rgba(255,255,255,.14);
+    color:#8A93A8;font-size:15px;line-height:28px;text-align:center;
+    opacity:0;transition:opacity .25s ease;pointer-events:none;}
+  .gear.show{opacity:1;pointer-events:auto;}
+  .gear:hover{color:#F2F4F9;}
+  .panel{position:fixed;top:50px;right:12px;z-index:21;display:none;width:250px;
+    background:rgba(16,21,35,.97);border:1px solid rgba(255,255,255,.14);
+    border-radius:13px;padding:15px 16px;box-shadow:0 12px 30px rgba(0,0,0,.5);}
+  .panel.on{display:block;}
+  .panel h3{margin:0 0 11px;font-size:12.5px;font-weight:800;color:#F2F4F9;letter-spacing:-.02em;}
+  .panel .lab{display:flex;align-items:baseline;justify-content:space-between;
+    font-size:11px;font-weight:700;color:#8A93A8;margin-bottom:6px;}
+  .panel .lab b{color:#FFD166;font-variant-numeric:tabular-nums;}
+  .panel input[type=range]{width:100%;accent-color:#FFD166;margin:0 0 12px;}
+  .quick{display:flex;gap:6px;margin-bottom:13px;}
+  .quick button{flex:1;font:inherit;font-size:11px;font-weight:700;color:#8A93A8;
+    background:rgba(43,52,80,.7);border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;padding:7px 0;cursor:pointer;}
+  .quick button:hover{color:#F2F4F9;}
+  .panel .cp{width:100%;font:inherit;font-size:11.5px;font-weight:800;color:#0A0D16;
+    background:#FFD166;border:0;border-radius:9px;padding:9px 0;cursor:pointer;}
+  .panel .note{margin-top:9px;font-size:10.5px;color:#616C85;line-height:1.65;}
   .top{
     display:flex;align-items:center;gap:9px;padding:11px 15px 10px;
     border-bottom:1px solid var(--line);
@@ -95,6 +123,20 @@
 </style>
 </head>
 <body>
+<div class="gear" id="gear" title="배경 진하기">⚙</div>
+<div class="panel" id="panel">
+  <h3>배경 진하기</h3>
+  <div class="lab"><span>불투명도</span><b id="bgVal">92%</b></div>
+  <input type="range" id="bgRange" min="0" max="100" step="1" value="92">
+  <div class="quick">
+    <button data-bg="0">완전 투명</button>
+    <button data-bg="55">반투명</button>
+    <button data-bg="100">불투명</button>
+  </div>
+  <button class="cp" id="bgCopy">이 설정이 담긴 주소 복사</button>
+  <div class="note">복사한 주소를 OBS에 넣으면 이 설정 그대로 뜹니다.</div>
+</div>
+
 <div class="box" id="box">
   <div class="top"><span class="dot"></span><b id="ttl">내 순위</b><span id="clock"></span></div>
   <div id="list"><div class="msg">불러오는 중입니다…</div></div>
@@ -110,8 +152,52 @@
   var RELAY='https://tired-echidna-4498.soop-up-site-collection.deno.net/list';
   /* ================================================= */
 
-  var S={ id:'', no:'', me:'', around:2, cut:0, interval:10,
+  var S={ id:'', no:'', me:'', around:2, cut:0, interval:10, bg:92,
           groups:[], relay:RELAY, items:[], prev:null, busy:false, err:'' };
+
+  /* ---------- 배경 진하기 ---------- */
+  function paintBg(v){
+    S.bg=Math.max(0,Math.min(100,Number(v)||0));
+    var a=S.bg/100;
+    var root=document.documentElement.style;
+    root.setProperty('--card','rgba(20,26,43,'+(a*0.94).toFixed(3)+')');
+    root.setProperty('--panel','rgba(14,20,32,'+(a*0.92).toFixed(3)+')');
+    root.setProperty('--line','rgba(255,255,255,'+(0.05+a*0.06).toFixed(3)+')');
+    document.body.classList.toggle('flat',S.bg<25);
+    document.body.classList.toggle('clear',S.bg<25);
+    $('bgRange').value=S.bg;
+    $('bgVal').textContent=S.bg+'%';
+  }
+  function myUrl(){
+    var q=new URLSearchParams(location.search);
+    q.set('bg',String(S.bg));
+    return location.origin+location.pathname+'?'+q.toString();
+  }
+  $('bgRange').addEventListener('input',function(){ paintBg(this.value); });
+  document.querySelectorAll('.quick button').forEach(function(b){
+    b.addEventListener('click',function(){ paintBg(b.getAttribute('data-bg')); });
+  });
+  $('bgCopy').addEventListener('click',function(){
+    var u=myUrl();
+    if(navigator.clipboard)navigator.clipboard.writeText(u);
+    $('bgCopy').textContent='복사됐습니다';
+    setTimeout(function(){ $('bgCopy').textContent='이 설정이 담긴 주소 복사'; },1500);
+  });
+  $('gear').addEventListener('click',function(){ $('panel').classList.toggle('on'); });
+
+  // 마우스를 움직이면 톱니가 나타나고, 가만히 있으면 사라집니다.
+  // OBS는 마우스가 없으니 방송 화면에는 안 나옵니다.
+  var hideAt=null;
+  function wake(){
+    $('gear').classList.add('show');
+    clearTimeout(hideAt);
+    hideAt=setTimeout(function(){
+      if(!$('panel').classList.contains('on'))$('gear').classList.remove('show');
+    },3000);
+  }
+  document.addEventListener('mousemove',wake);
+  document.addEventListener('touchstart',wake);
+  wake();
 
   /* ---------- 설정 읽기 ---------- */
   function parsePost(u){
@@ -161,6 +247,7 @@
     S.interval=Math.max(5,Number(src.i||src.interval||10));
     S.groups=parseGroups(src.g||src.groups);
     S.relay=src.r||src.relay||RELAY;
+    paintBg(src.bg!=null&&src.bg!=='' ? src.bg : 92);
     if(src.t||src.title)$('ttl').textContent=src.t||src.title;
     if(S.timer)clearInterval(S.timer);
     if(S.id){ load(); S.timer=setInterval(load,S.interval*1000); }
@@ -346,7 +433,7 @@
         var c=all&&all[slug];
         if(!c)throw new Error('"'+slug+'" 설정이 presets.json 안에 없습니다.');
         c=Object.assign({},c);
-        ['me','a','around','i','t'].forEach(function(k){ if(P.get(k)!=null)c[k]=P.get(k); });
+        ['me','a','around','i','t','bg'].forEach(function(k){ if(P.get(k)!=null)c[k]=P.get(k); });
         apply(c);
       })
       .catch(function(e){ S.err=e.message||String(e); draw(); });
@@ -354,6 +441,7 @@
     var o={};
     P.forEach(function(v,k){ o[k]=v; });
     if(!o.p&&!o.post){
+      paintBg(o.bg!=null?o.bg:92);
       $('list').innerHTML='<div class="msg">주소에 설정이 없습니다.<br>순위 페이지에서 오버레이 주소를 만들어 사용해주세요.</div>';
     }else apply(o);
   }

@@ -223,11 +223,21 @@
           <option value="3">3명씩</option><option value="4">4명씩</option>
         </select></div>
     </div>
-    <div class="f"><label>갱신 주기</label>
-      <select id="aitv">
-        <option value="5">5초</option><option value="10" selected>10초</option>
-        <option value="15">15초</option><option value="30">30초</option>
-      </select></div>
+    <div class="g2">
+      <div class="f"><label>갱신 주기</label>
+        <select id="aitv">
+          <option value="5">5초</option><option value="10" selected>10초</option>
+          <option value="15">15초</option><option value="30">30초</option>
+        </select></div>
+      <div class="f"><label>배경 진하기</label>
+        <select id="abg">
+          <option value="">스트리머가 직접 고르게</option>
+          <option value="100">불투명 (100%)</option>
+          <option value="92" selected>기본 (92%)</option>
+          <option value="55">반투명 (55%)</option>
+          <option value="0">완전 투명 (0%)</option>
+        </select></div>
+    </div>
     <label class="check"><input type="checkbox" id="acap"><span>순위표 스크린샷 권한도 같이 주기</span></label>
 
     <div id="alinks"></div>
@@ -360,6 +370,7 @@
       var q=new URLSearchParams();
       q.set('s',slug); q.set('me',id);
       q.set('a',$('aaround').value); q.set('i',$('aitv').value);
+      if($('abg').value!=='')q.set('bg',$('abg').value);
       overlayUrl=BASE+'overlay.html?'+q.toString();
 
       var capUrl='';
@@ -386,14 +397,17 @@
         (capUrl ? '▸ 순위표 (스크린샷 버튼 포함)\n'+capUrl+'\n\n' : '')+
         'OBS에서 소스 + → 브라우저 를 추가하고 URL 칸에 붙여넣으세요.\n'+
         '너비 440, 높이 420 정도가 적당합니다. 배경은 투명입니다.\n'+
-        '내 줄이 금색으로 표시되고, 위아래 '+$('aaround').value+'명씩과의 UP 차이가 아래에 나옵니다.\n\n'+
+        '내 줄이 금색으로 표시되고, 위아래 '+$('aaround').value+'명씩과의 UP 차이가 아래에 나옵니다.\n'+
+        '배경 진하기를 바꾸고 싶으면, 브라우저로 그 주소를 연 뒤 마우스를 움직이면\n'+
+        '오른쪽 위에 톱니 모양이 나타납니다. 거기서 조절하고 주소를 다시 복사하세요.\n'+
+        '(OBS 화면에는 톱니가 안 보이니 걱정 안 하셔도 됩니다.)\n\n'+
         '링크는 본인만 사용해주세요.\n\n— '+ADMIN_NICK;
 
       $('asay').className='say';
       $('asay').textContent='신청서의 인증번호가 위 숫자와 같은지, 쪽지 보낸 아이디가 같은지 확인해주세요.';
     }
 
-    ['aid','aslug','aaround','aitv','acap'].forEach(function(k){
+    ['aid','aslug','aaround','aitv','abg','acap'].forEach(function(k){
       $(k).addEventListener('input',makeLinks);
       $(k).addEventListener('change',makeLinks);
     });

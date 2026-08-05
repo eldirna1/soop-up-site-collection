@@ -172,8 +172,9 @@
       <input id="postUrl" placeholder="https://www.sooplive.com/station/아이디/post/글번호">
     </div>
     <div class="f">
-      <label>중계 주소 (데이터가 막힐 때)</label>
-      <input id="relay" placeholder="https://내주소.workers.dev/?u=">
+      <label>중계 주소 (실시간으로 보려면 필요합니다)</label>
+      <input id="relay" placeholder="https://내주소.deno.dev/list">
+      <span class="ghint">비워두면 깃허브가 5분마다 모아둔 예비 자료로 보여줍니다.</span>
     </div>
     <div class="g2">
       <div class="f"><label>제목</label><input id="ttl" value="지원자 UP 순위"></div>
@@ -188,16 +189,17 @@
     <div class="g2">
       <div class="f"><label>마감 일시</label><input id="dl" type="datetime-local"></div>
       <div class="f"><label>갱신 주기</label>
-        <select id="itv"><option value="15">15초</option><option value="30" selected>30초</option>
-        <option value="60">1분</option></select></div>
+        <select id="itv"><option value="5">5초</option><option value="10" selected>10초</option>
+        <option value="15">15초</option><option value="30">30초</option>
+        <option value="300">5분</option></select></div>
     </div>
     <div class="f">
       <label>부문 나누기 (비우면 나누지 않습니다)</label>
-      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 남자)"><input class="gk" placeholder="찾을 낱말 (쉼표로 여러 개)"></div>
-      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 여자)"><input class="gk" placeholder="찾을 낱말"></div>
+      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 버튜버)"><input class="gk" placeholder="찾을 낱말 (쉼표로 여러 개)"></div>
+      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 남자)"><input class="gk" placeholder="찾을 낱말"></div>
       <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 신입)"><input class="gk" placeholder="찾을 낱말"></div>
       <span class="ghint">댓글 내용에 그 낱말이 들어 있으면 그 부문으로 들어갑니다.
-        맨 앞에 있는 낱말을 먼저 보고, 답글이면 위 댓글의 내용을 먼저 봅니다.</span>
+        답글이면 위 댓글의 내용을 먼저 봅니다.</span>
     </div>
     <div class="btns">
       <button id="apply">미리보기</button>
@@ -254,7 +256,7 @@
   var P=new URLSearchParams(location.search);
 
   var S={
-    id:'',no:'',relay:'',cut:25,cutOn:true,interval:30,deadline:null,
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,deadline:null,
     groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
@@ -324,20 +326,17 @@
   }
   function flat(f){
     var out=[];
-    var seen=0;
     function push(r,ptxt){
       if(!r||typeof r!=='object')return;
-      if(++seen>20000)return;              // 안전장치: 무한히 도는 것 방지
       var nick=String(r[f.nk]==null?'':r[f.nk]).trim();
-      if(!nick)return;                     // 원래 동작으로 되돌림
-      var uid=f.idk?String(r[f.idk]==null?'':r[f.idk]):'';
       var txt=f.tk?String(r[f.tk]==null?'':r[f.tk]):'';
+      if(nick)
       out.push({
-        nick:nick, up:Number(r[f.uk])||0, uid:uid,
+        nick:nick, up:Number(r[f.uk])||0, uid:(f.idk?String(r[f.idk]==null?'':r[f.idk]):''),
         date:f.dk?String(r[f.dk]||''):'',
-        img:avatar(uid,f.imk?r[f.imk]:''),
+        img:avatar(f.idk?String(r[f.idk]==null?'':r[f.idk]):'',f.imk?r[f.imk]:''),
         txt:txt, ptxt:ptxt||'',
-        key:uid||('n:'+nick)
+        key:(f.idk&&r[f.idk])?String(r[f.idk]):('n:'+nick)
       });
       for(var k in r){var v=r[k];
         if(Array.isArray(v)&&v.length&&typeof v[0]==='object'&&v[0]&&(f.nk in v[0]))
@@ -357,23 +356,11 @@
     }
     return false;
   }
-  function starts(txt,g){
-    var t=norm(txt); if(!t)return false;
-    for(var j=0;j<g.keys.length;j++){
-      var k=norm(g.keys[j]);
-      if(k&&t.indexOf(k)===0)return true;
-    }
-    return false;
-  }
   function classify(r){
     var G=S.groups,i;
     if(!G.length)return -1;
-    // 맨 앞에서 시작하는 것부터 (예: "1번 남자…" 의 1번)
-    for(i=0;i<G.length;i++) if(starts(r.ptxt,G[i])) return i;
-    for(i=0;i<G.length;i++) if(starts(r.txt ,G[i])) return i;
-    // 그다음 글 어디에든 들어 있으면
-    for(i=0;i<G.length;i++) if(hit(r.ptxt,G[i])) return i;
-    for(i=0;i<G.length;i++) if(hit(r.txt ,G[i])) return i;
+    for(i=0;i<G.length;i++) if(hit(r.ptxt,G[i])) return i;   // 답글이면 위 댓글 먼저
+    for(i=0;i<G.length;i++) if(hit(r.txt,G[i]))  return i;   // 그다음 자기 댓글
     return -1;
   }
   function parseGroups(s){
@@ -391,68 +378,77 @@
   }
 
   /* ---------- 가져오기 ---------- */
+  // 1순위: 중계기로 실시간   2순위: 깃허브가 5분마다 모아둔 예비 자료
+  function relayUrl(){
+    var b=S.relay.replace(/\/+$/,'');
+    if(!/\/list$/.test(b))b+='/list';
+    return b+'?id='+encodeURIComponent(S.id.toLowerCase())+'&no='+encodeURIComponent(S.no)+'&t='+Date.now();
+  }
+  function backupUrl(){
+    return 'data/'+encodeURIComponent(S.id.toLowerCase())+'-'+encodeURIComponent(S.no)+'.json?t='+Date.now();
+  }
+  function getJson(url,ms){
+    return new Promise(function(res,rej){
+      var to=setTimeout(function(){rej(new Error((ms/1000)+'초 동안 응답이 없습니다.'));},ms);
+      fetch(url,{cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}})
+        .then(function(r){
+          if(!r.ok&&r.status!==502)throw new Error('서버가 '+r.status+' 로 응답했습니다.');
+          return r.json();
+        })
+        .then(function(j){ clearTimeout(to); if(j&&j.error)rej(new Error(j.error)); else res(j); })
+        .catch(function(e){
+          clearTimeout(to);
+          var m=e.message||String(e);
+          if(/Failed to fetch|NetworkError|load failed/i.test(m))m='연결하지 못했습니다.';
+          rej(new Error(m));
+        });
+    });
+  }
+  function apply(rows,updated,isBackup){
+    var map={};
+    (rows||[]).forEach(function(r){ if(!map[r.key]||r.up>map[r.key].up)map[r.key]=r; });
+    S.items=Object.keys(map).map(function(k){return map[k];});
+    S.items.sort(function(a,b){return b.up-a.up;});
+    if(S.groups.length){
+      var n={};
+      S.items.forEach(function(r){
+        r.grp=classify(r);
+        n[r.grp]=(n[r.grp]||0)+1;
+        r.rank=n[r.grp];                 // 부문 안에서의 순위
+      });
+    }else{
+      S.items.forEach(function(r,i){ r.grp=-1; r.rank=i+1; });
+    }
+    S.err='';S.backup=!!isBackup;
+    S.lastAt=updated?new Date(updated):new Date();
+    render();
+  }
   function load(){
-    if(!S.id)return;
+    if(!S.id||S.busy)return;
+    S.busy=true;
     if(!S.items.length){
       $('body').innerHTML='<div class="msg">불러오는 중입니다…</div>';
       $('stat').textContent='';
     }
-    var got=[],page=1,lastSig='';
-    function step(){
-      if(page>40)return done();
-      if(!S.items.length)
-        $('body').innerHTML='<div class="msg">불러오는 중입니다… ('+page+'쪽째)</div>';
-      var stop=false, killer=setTimeout(function(){
-        stop=true;
-        S.err='서버가 12초 동안 응답하지 않았습니다. ('+page+'쪽에서 멈춤)\n\n확인용 주소: '+apiUrl(page);
-        render();
-      },12000);
-      fetch(apiUrl(page),{credentials:'omit',headers:{'Accept':'application/json, text/plain, */*'}})
-        .then(function(r){ clearTimeout(killer); if(stop)throw new Error('__stop__');
-          if(!r.ok)throw new Error('서버가 '+r.status+' 로 응답했습니다.'); return r.json(); })
-        .then(function(j){
-          var f=analyze(j);
-          if(!f){ if(page===1)throw new Error('응답에서 지원자 목록을 못 찾았습니다.'); return done(); }
-          var rows=flat(f);
-          var sig=rows.length+'|'+(rows[0]?rows[0].nick+rows[0].up:'');
-          if(sig===lastSig)return done();
-          lastSig=sig;
-          got=got.concat(rows);
-          if(rows.length<5)return done();
-          page++;step();
-        })
-        .catch(function(e){
-          clearTimeout(killer);
-          var m=e.message||String(e);
-          if(m==='__stop__')return;
-          if(/Failed to fetch|NetworkError|CORS|load failed/i.test(m)){
-            m = S.relay
-              ? '중계 주소가 응답하지 않습니다.\n중계 주소가 맞는지, 그 서비스가 살아 있는지 확인해주세요.'
-              : 'SOOP이 이 페이지의 요청을 막았습니다 (CORS).\n설정의 "중계 주소" 칸을 채우면 해결됩니다.';
-          }
-          S.err=m+'\n\n확인용 주소: '+apiUrl(1);
-          render();
-        });
-    }
-    function done(){
-      // 같은 사람이 여러 번 썼으면 UP 제일 높은 것만
-      var map={};
-      got.forEach(function(r){ if(!map[r.key]||r.up>map[r.key].up)map[r.key]=r; });
-      S.items=Object.keys(map).map(function(k){return map[k];});
-      S.items.sort(function(a,b){return b.up-a.up;});
-      if(S.groups.length){
-        var n={};
-        S.items.forEach(function(r){
-          r.grp=classify(r);
-          n[r.grp]=(n[r.grp]||0)+1;
-          r.rank=n[r.grp];                 // 부문 안에서의 순위
-        });
-      }else{
-        S.items.forEach(function(r,i){ r.grp=-1; r.rank=i+1; });
-      }
-      S.err='';S.lastAt=new Date();render();
-    }
-    step();
+    var live = S.relay
+      ? getJson(relayUrl(),12000)
+      : Promise.reject(new Error('중계 주소가 비어 있습니다.'));
+
+    live.then(function(j){ apply(j.items,j.updated,false); })
+      .catch(function(e){
+        var why=e.message||String(e);
+        return getJson(backupUrl(),10000)
+          .then(function(j){ apply(j.items,j.updated,true); })
+          .catch(function(){
+            S.err='실시간으로 가져오지 못했습니다.\n· '+why+'\n\n'+
+              (S.relay
+                ? '중계 주소가 살아 있는지 확인해주세요.'
+                : '설정의 "중계 주소" 칸을 채워주세요.')+
+              '\n예비 자료도 아직 없습니다.';
+            render();
+          });
+      })
+      .then(function(){ S.busy=false; }, function(){ S.busy=false; });
   }
 
   /* ---------- 그리기 ---------- */
@@ -546,7 +542,8 @@
       var g=S.groups[S.tab];
       head=(g?g.name:'기타')+' '+rows.length+'명 · 전체 '+S.items.length+'명';
     }
-    $('stat').textContent=head+(S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
+    $('stat').textContent=head+(S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'')+
+      (S.backup?' · 예비 자료 (최대 5분 지연)':'');
   }
 
   /* ---------- 마감 시계 ---------- */
@@ -571,7 +568,7 @@
     S.tab = S.groups.length?0:-1;
     S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
     S.cut = S.cutOn ? Number(src.cut||0) : 0;
-    S.interval=Number(src.interval||30);
+    S.interval=Number(src.interval||10);
     S.deadline=src.deadline?new Date(src.deadline).getTime():null;
     if(src.title)$('title').textContent=src.title;
     $('sub').innerHTML = S.cut>0

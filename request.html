@@ -3,23 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UP순 랭킹 링크 신청</title>
-<meta name="description" content="SOOP 스트리머가 방송화면용 UP순 실시간 랭킹 링크를 신청하는 창구.">
+<title>오버레이 링크 신청</title>
+<meta name="description" content="SOOP 스트리머가 방송화면용 UP순 오버레이 링크를 신청하는 창구.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
   :root{
     --bg:#0A0D16; --card:#141A2B; --panel:#0E1420; --line:#1E2637;
     --text:#F2F4F9; --muted:#8A93A8; --dim:#616C85;
     --pill:#2B3450; --pill-hi:#3A4568; --edge:#252E44;
-    --gold:#FFD166; --cut:#7C8CFF; --ok:#5FD3A0; --warn:#FF9A8B;
+    --gold:#FFD166; --cut:#7C8CFF; --ok:#5FD3A0; --warn:#FF8A78;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);}
-  body{
-    color:var(--text); padding:28px 20px 80px;
+  body{color:var(--text);padding:28px 20px 80px;
     font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
+    -webkit-font-smoothing:antialiased;}
   .wrap{max-width:720px;margin:0 auto;}
 
   .hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;}
@@ -29,26 +27,20 @@
 
   .step{background:var(--card);border:1px solid var(--line);border-radius:14px;
     padding:22px 24px;margin-top:14px;}
-  .step > h2{margin:0 0 4px;font-size:16px;font-weight:800;letter-spacing:-.02em;
+  .step>h2{margin:0 0 4px;font-size:16px;font-weight:800;letter-spacing:-.02em;
     display:flex;align-items:center;gap:10px;}
-  .step > h2 .no{
-    flex:none;width:24px;height:24px;border-radius:8px;background:var(--pill);
-    border:1px solid var(--edge);color:var(--cut);
-    font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;
-  }
-  .step > .lead{margin:0 0 16px;padding-left:34px;font-size:12.5px;color:var(--muted);line-height:1.8;}
+  .step>h2 .no{flex:none;width:24px;height:24px;border-radius:8px;background:var(--pill);
+    border:1px solid var(--edge);color:var(--cut);font-size:12px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;}
+  .step>.lead{margin:0 0 16px;padding-left:34px;font-size:12.5px;color:var(--muted);line-height:1.8;}
 
   .f{display:flex;flex-direction:column;gap:5px;margin-bottom:11px;}
   .f label{font-size:11.5px;font-weight:700;color:var(--muted);}
   .f .hint{font-size:11px;color:var(--dim);line-height:1.7;}
-  .f input,.f select,.f textarea{
-    font:inherit;font-size:13px;color:var(--text);background:var(--panel);
-    border:1px solid var(--edge);border-radius:9px;padding:9px 11px;width:100%;
-  }
-  .f input::placeholder,.f textarea::placeholder{color:var(--dim);}
-  .f textarea{min-height:60px;resize:vertical;line-height:1.7;}
+  .f input,.f select{font:inherit;font-size:13px;color:var(--text);background:var(--panel);
+    border:1px solid var(--edge);border-radius:9px;padding:9px 11px;width:100%;}
+  .f input::placeholder{color:var(--dim);}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 
   button{font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--pill);
     border:1px solid var(--edge);border-radius:9px;padding:10px 16px;cursor:pointer;
@@ -58,68 +50,58 @@
   button.main:hover{background:#96A2FF;}
   .btns{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
 
-  .vbox{
-    background:var(--panel);border:1px solid var(--edge);border-radius:12px;
-    padding:18px 20px;text-align:center;margin:4px 0 14px;
-  }
+  .vbox{background:var(--panel);border:1px solid var(--edge);border-radius:12px;
+    padding:18px 20px;text-align:center;margin:4px 0 14px;}
   .vbox .cap{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:9px;}
-  .vbox .code{
-    font-size:31px;font-weight:900;letter-spacing:.18em;color:var(--gold);
-    font-variant-numeric:tabular-nums;line-height:1.2;
-  }
+  .vbox .code{font-size:31px;font-weight:900;letter-spacing:.18em;color:var(--gold);
+    font-variant-numeric:tabular-nums;line-height:1.2;}
   .vbox .code.wait{font-size:14px;letter-spacing:0;color:var(--dim);font-weight:700;}
   .vbox .note{font-size:11.5px;color:var(--dim);margin-top:9px;line-height:1.7;}
 
+  .paper{background:var(--panel);border:1px solid var(--edge);border-radius:11px;
+    padding:15px 16px;font-size:12.5px;line-height:1.9;color:var(--muted);
+    white-space:pre-wrap;word-break:break-all;min-height:60px;}
+  .paper.empty{color:var(--dim);}
+  .say{margin-top:10px;font-size:12px;line-height:1.8;color:var(--muted);}
+  .say.ok{color:var(--ok);} .say.no{color:var(--warn);}
+
+  .where{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .where a{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--text);
+    background:var(--pill);border:1px solid var(--edge);border-radius:9px;padding:10px 15px;}
+  .where a:hover{background:var(--pill-hi);}
+  .where a.big{background:var(--cut);border-color:var(--cut);color:#0A0D16;}
+  .where a.big:hover{background:#96A2FF;}
+
+  .rules{margin:0;padding-left:34px;list-style:none;}
+  .rules li{position:relative;font-size:12.5px;color:var(--muted);line-height:1.85;padding-left:15px;}
+  .rules li::before{content:"·";position:absolute;left:2px;color:var(--cut);font-weight:900;}
   .howto{margin:0;padding-left:34px;list-style:none;counter-reset:h;}
   .howto li{position:relative;font-size:12.5px;color:var(--muted);line-height:1.85;
     padding-left:18px;margin-bottom:5px;counter-increment:h;}
   .howto li::before{content:counter(h)".";position:absolute;left:0;color:var(--cut);font-weight:800;}
   .howto b{color:var(--text);font-weight:700;}
 
-  .paper{
-    background:var(--panel);border:1px solid var(--edge);border-radius:11px;
-    padding:15px 16px;font-size:12.5px;line-height:1.9;color:var(--muted);
-    white-space:pre-wrap;word-break:break-all;min-height:60px;
-  }
-  .paper.empty{color:var(--dim);}
-  .say{margin-top:10px;font-size:12px;line-height:1.8;color:var(--muted);}
-  .say.ok{color:var(--ok);}
-  .say.no{color:var(--warn);}
-
-  .where{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
-  .where a{
-    text-decoration:none;font-size:12.5px;font-weight:700;color:var(--text);
-    background:var(--pill);border:1px solid var(--edge);border-radius:9px;padding:10px 15px;
-  }
-  .where a:hover{background:var(--pill-hi);}
-
-  .rules{margin:0;padding-left:34px;list-style:none;}
-  .rules li{position:relative;font-size:12.5px;color:var(--muted);line-height:1.85;padding-left:15px;}
-  .rules li::before{content:"·";position:absolute;left:2px;color:var(--cut);font-weight:900;}
-
   .foot{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;text-align:center;}
 
+  /* 관리자 */
   .admin{border-color:var(--gold);}
-  .admin > h2 .no{color:var(--gold);}
-  .checks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px;}
-  .sw{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
-    font-size:12.5px;font-weight:700;color:var(--muted);user-select:none;
-    background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:9px 12px;}
-  .sw input{width:15px;height:15px;accent-color:var(--cut);cursor:pointer;margin:0;}
-  .sw.on{color:var(--text);border-color:var(--cut);}
-  .link{
-    background:var(--panel);border:1px solid var(--edge);border-radius:11px;
-    padding:14px 15px;font-size:12.5px;line-height:1.8;color:var(--cut);
-    word-break:break-all;min-height:48px;
-  }
-  .link.empty{color:var(--dim);}
+  .admin>h2 .no{color:var(--gold);}
   .divide{height:1px;background:var(--line);margin:18px 0;}
+  .linkbox{background:var(--panel);border:1px solid var(--edge);border-radius:11px;
+    padding:13px 15px;margin-bottom:9px;}
+  .linkbox .t{font-size:11.5px;font-weight:800;color:var(--gold);margin-bottom:6px;}
+  .linkbox .u{font-size:12.5px;line-height:1.75;color:var(--cut);word-break:break-all;user-select:all;}
+  .linkbox .d{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.6;}
+  .check{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+    font-size:12.5px;font-weight:700;color:var(--muted);background:var(--panel);
+    border:1px solid var(--edge);border-radius:9px;padding:9px 12px;margin-bottom:11px;}
+  .check input{width:15px;height:15px;accent-color:var(--gold);margin:0;cursor:pointer;}
 
   @media (max-width:640px){
-    .g2,.g3{grid-template-columns:1fr;}
+    .g2{grid-template-columns:1fr;}
     .hero{padding:20px;} .hero h1{font-size:23px;}
     .step{padding:18px 16px;}
-    .step > .lead,.howto,.rules{padding-left:0;}
+    .step>.lead,.howto,.rules{padding-left:0;}
   }
 </style>
 </head>
@@ -127,15 +109,17 @@
 <div class="wrap">
 
   <div class="hero">
-    <h1>UP순 랭킹 링크 신청</h1>
-    <p>게시글 UP 순위를 <b>방송화면에 실시간으로 띄우는 링크</b>를 만들어 드립니다.<br>
-       아래를 채우면 신청서가 만들어집니다. 본인 방송국이 맞는지 확인한 뒤 링크를 보내드립니다.</p>
+    <h1>오버레이 링크 신청</h1>
+    <p>내 순위를 <b>방송화면에 실시간으로 띄우는 링크</b>를 만들어 드립니다.<br>
+       아래를 채우고 <b>SOOP 쪽지</b>로 보내주시면, 확인 후 링크를 답장으로 보내드립니다.<br>
+       받는 사람: <b id="whoTo"></b></p>
   </div>
 
   <!-- 1 -->
   <div class="step">
-    <h2><span class="no">1</span>어디에 쓸 건지 적기</h2>
-    <p class="lead">순위를 띄울 게시글 주소가 필요합니다. 아직 글을 안 올렸으면 먼저 올린 뒤에 신청해주세요.</p>
+    <h2><span class="no">1</span>내 방송국 적기</h2>
+    <p class="lead">방송국 주소만 있으면 됩니다. 쪽지를 보내는 순간 누가 보냈는지 아이디가 함께 찍히기 때문에,
+       따로 인증 절차를 거치실 필요가 없습니다.</p>
 
     <div class="f">
       <label>내 방송국 주소 또는 아이디</label>
@@ -146,39 +130,18 @@
       <label>방송 닉네임</label>
       <input id="nick" placeholder="예: 엘디르나">
     </div>
-    <div class="f">
-      <label>순위를 띄울 게시글 주소</label>
-      <textarea id="post" placeholder="https://www.sooplive.com/station/아이디/post/글번호"></textarea>
-      <span class="hint">(페이지가 여러 개일 때) 줄을 바꿔 주소를 여러 개 적어주세요.</span>
-      <span class="hint" id="postHint"></span>
+
+    <div class="vbox">
+      <div class="cap">내 인증번호</div>
+      <div class="code wait" id="vnum">위에 아이디를 먼저 적어주세요</div>
+      <div class="note">신청서에 자동으로 들어갑니다. 따로 외우거나 옮겨 적지 않으셔도 됩니다.</div>
     </div>
   </div>
 
   <!-- 2 -->
   <div class="step">
-    <h2><span class="no">2</span>본인 방송국이 맞는지 확인</h2>
-    <p class="lead">아이디를 적으면 그 아이디 전용 인증번호가 나옵니다.
-       방송국 주인만 할 수 있는 일을 시켜서 본인인지 확인하는 방식입니다.</p>
-
-    <div class="vbox">
-      <div class="cap">내 인증번호</div>
-      <div class="code wait" id="vnum">위에 아이디를 먼저 적어주세요</div>
-      <div class="note">아이디마다 다르게 나오고, 다시 열어도 똑같이 나옵니다.</div>
-    </div>
-
-    <ol class="howto">
-      <li>SOOP 방송국 관리에서 <b>방송국 소개글</b>을 엽니다.</li>
-      <li>아무 곳에나 <b>인증 <span id="vnumInline">------</span></b> 이라고 한 줄 넣고 저장합니다.</li>
-      <li>저장된 소개글이 보이도록 <b>화면을 캡처</b>합니다.</li>
-      <li>링크를 받은 뒤에는 그 줄을 지워도 됩니다.</li>
-    </ol>
-  </div>
-
-  <!-- 3 -->
-  <div class="step">
-    <h2><span class="no">3</span>신청서 보내기</h2>
-    <p class="lead">신청서를 만든 뒤, SOOP 쪽지나 메일 중 편한 쪽으로 캡처 사진과 함께 보내주세요.
-       답장은 보내신 쪽으로 갑니다.</p>
+    <h2><span class="no">2</span>쪽지로 보내기</h2>
+    <p class="lead">아래 버튼을 누르면 쪽지 창이 열립니다. 신청서를 붙여넣고 보내주세요.</p>
 
     <div class="paper empty" id="paper">1번을 채우면 신청서가 여기에 만들어집니다.</div>
     <div class="btns">
@@ -188,95 +151,83 @@
     <div class="say" id="say"></div>
 
     <div class="where">
-      <a id="toNote" href="#" target="_blank" rel="noopener" style="display:none">SOOP 쪽지로 보내기</a>
-      <a id="toGmail" href="#" target="_blank" rel="noopener" style="display:none">Gmail로 보내기</a>
-      <a id="toMail" href="#" style="display:none">메일 앱으로 보내기</a>
+      <a id="toNote" href="#" target="_blank" rel="noopener" style="display:none" class="big">SOOP 쪽지 창 열기</a>
+      <a id="toMail" href="#" style="display:none">메일로 보내기</a>
     </div>
-    <div class="say" id="mailAddr"></div>
-    <div class="say">캡처 사진은 창이 열린 뒤에 직접 첨부해주세요. 버튼은 글만 채워줍니다.</div>
   </div>
 
-  <!-- 4 -->
+  <!-- 3 -->
   <div class="step">
-    <h2><span class="no">4</span>링크를 받은 뒤 (OBS에 넣기)</h2>
+    <h2><span class="no">3</span>받은 링크를 방송화면에 넣기</h2>
     <p class="lead">답장으로 받은 주소를 이렇게 넣으시면 방송화면에 뜹니다.</p>
     <ol class="howto">
-      <li>OBS에서 소스 <b>+</b> → <b>브라우저</b> 추가</li>
+      <li>OBS에서 소스 <b>+</b> → <b>브라우저</b> 추가 (프릭샷은 <b>웹 소스</b>)</li>
       <li><b>URL</b> 칸에 받은 주소를 붙여넣기</li>
-      <li>너비 <b>420</b>, 높이 <b>760</b> 정도로 맞추기 (원하는 대로 조절 가능)</li>
+      <li>너비 <b>440</b>, 높이 <b>420</b> 정도로 맞추기</li>
       <li>확인 누르고 크기·위치 조정</li>
     </ol>
+    <p class="lead" style="margin-top:14px;margin-bottom:0">
+      배경이 투명해서 방송화면 위에 그대로 얹힙니다. 내 줄이 금색으로 강조되고,
+      위아래 두 명씩과의 UP 차이가 아래에 나옵니다.</p>
   </div>
 
   <!-- 안내 -->
   <div class="step">
     <h2><span class="no">i</span>발급 기준</h2>
-    <p class="lead">아래를 모두 만족하면 보통 하루 안에 링크를 보내드립니다.</p>
+    <p class="lead">아래를 만족하면 보통 하루 안에 링크를 보내드립니다.</p>
     <ul class="rules">
-      <li>실제로 열려 있는 SOOP 방송국일 것</li>
-      <li>소개글에 인증번호가 들어간 캡처를 보낼 것</li>
-      <li>게시글이 본인 방송국의 글일 것</li>
+      <li>대회에 실제로 지원한 스트리머일 것 (댓글이 목록에 있어야 합니다)</li>
+      <li>신청서에 적은 아이디와 쪽지를 보낸 아이디가 같을 것</li>
       <li>최근 30일 안에 방송 기록이 있을 것</li>
-      <li>방송국을 만든 지 30일이 지났을 것</li>
-      <li>받은 링크를 다른 사람에게 넘기지 말 것 (넘기면 막힙니다)</li>
+      <li>받은 링크를 다른 사람에게 넘기지 말 것</li>
     </ul>
   </div>
 
   <!-- 관리자 -->
   <div class="step admin" id="adminBox" style="display:none">
     <h2><span class="no">★</span>관리자 · 링크 만들기</h2>
-    <p class="lead">신청자 아이디로 인증번호를 대조하고, 게시글 주소를 넣어 방송용 링크를 만듭니다.</p>
+    <p class="lead">쪽지 보낸 아이디를 넣으면 인증번호가 맞는지 확인되고, 링크가 바로 만들어집니다.</p>
 
     <div class="f">
       <label>신청자 아이디</label>
-      <input id="aid" placeholder="아이디만 적어주세요">
+      <input id="aid" placeholder="쪽지 보낸 사람 아이디">
+      <span class="hint" id="aidHint"></span>
     </div>
     <div class="vbox">
-      <div class="cap">소개글의 번호가 이것과 같아야 함</div>
+      <div class="cap">신청서의 인증번호가 이것과 같아야 합니다</div>
       <div class="code wait" id="avnum">------</div>
     </div>
-    <div class="where" style="margin-top:0;margin-bottom:4px">
+    <div class="where" style="margin-top:0">
       <a id="agov" href="#" target="_blank" rel="noopener">방송국 열어보기</a>
+      <a id="anote" href="#" target="_blank" rel="noopener">이 사람에게 쪽지 쓰기</a>
     </div>
 
     <div class="divide"></div>
 
-    <div class="f">
-      <label>게시글 주소</label>
-      <input id="apost" placeholder="https://www.sooplive.com/station/아이디/post/글번호">
-      <span class="hint" id="apostHint"></span>
-    </div>
-    <div class="g3">
-      <div class="f"><label>갱신 주기</label>
-        <select id="aitv">
-          <option value="5">5초</option><option value="7" selected>7초</option>
-          <option value="10">10초</option><option value="15">15초</option><option value="30">30초</option>
+    <div class="g2">
+      <div class="f"><label>대회 설정 이름</label><input id="aslug" value="up2026"></div>
+      <div class="f"><label>위아래 몇 명씩</label>
+        <select id="aaround">
+          <option value="1">1명씩</option><option value="2" selected>2명씩</option>
+          <option value="3">3명씩</option><option value="4">4명씩</option>
         </select></div>
-      <div class="f"><label>표시 개수</label>
-        <select id="atop">
-          <option value="0" selected>전체</option><option value="5">5명</option>
-          <option value="10">10명</option><option value="20">20명</option><option value="30">30명</option>
-        </select></div>
-      <div class="f"><label>제목</label><input id="attl" placeholder="비우면 기본값"></div>
     </div>
-    <div class="checks">
-      <label class="sw on" data-sw><input type="checkbox" id="adelta" checked><span>변동 표시</span></label>
-      <label class="sw on" data-sw><input type="checkbox" id="aprof" checked><span>프로필</span></label>
-      <label class="sw" data-sw><input type="checkbox" id="amerge"><span>중복 합치기</span></label>
-    </div>
+    <div class="f"><label>갱신 주기</label>
+      <select id="aitv">
+        <option value="5">5초</option><option value="10" selected>10초</option>
+        <option value="15">15초</option><option value="30">30초</option>
+      </select></div>
+    <label class="check"><input type="checkbox" id="acap"><span>순위표 스크린샷 권한도 같이 주기</span></label>
 
-    <div class="link empty" id="alink">게시글 주소를 넣고 아래 버튼을 눌러주세요.</div>
+    <div id="alinks"></div>
     <div class="btns">
-      <button class="main" id="amake">링크 만들기</button>
-      <button id="acopy">복사</button>
-      <button id="aopen">열어보기</button>
+      <button class="main" id="acopy">답장 문구 통째로 복사</button>
+      <button id="aopen">오버레이 열어보기</button>
     </div>
     <div class="say" id="asay"></div>
   </div>
 
-  <div class="foot">
-    답변까지 보통 하루 정도 걸립니다. 3일이 지나도 연락이 없으면 다시 보내주세요.
-  </div>
+  <div class="foot">답변까지 보통 하루 정도 걸립니다. 3일이 지나도 연락이 없으면 다시 보내주세요.</div>
 </div>
 
 <script>
@@ -286,75 +237,55 @@
   var P=new URLSearchParams(location.search);
 
   /* ===== 여기만 내 정보로 바꾸면 됩니다 ===== */
-  var ADMIN_ID    = 'eldirna';        // 내 SOOP 아이디 (쪽지 링크에 씁니다)
-  var ADMIN_MAIL  = 'eldirna1@gmail.com'; // 신청서를 받을 메일 주소
-  var SECRET      = 'change-me-2026'; // 링크 서명에 쓰는 나만의 문구. 꼭 바꾸고, 이후 바꾸지 마세요.
-  var OVERLAY_URL = 'https://eldirna1.github.io/soop-up-site-collection/overlay.html';
+  var ADMIN_ID   = 'ludmila111';            // 내 SOOP 아이디 (쪽지 링크에 씁니다)
+  var ADMIN_NICK = '루드밀라_';               // 답장 문구에 들어갈 이름
+  var ADMIN_MAIL = 'eldirna1@gmail.com';    // 메일로도 받고 싶을 때
+  var SECRET     = 'ludmila111-soop-up-2026';  // 인증번호 재료. 한 번 정하면 바꾸지 마세요.
   /* ======================================== */
+
+  var BASE = location.href.replace(/[^/]*$/,'');   // 같은 폴더 기준
+
+  $('whoTo').textContent = ADMIN_NICK+' ('+ADMIN_ID+')';
 
   /* ---------- 주소 읽기 ---------- */
   function readId(raw){
     var s=String(raw||'').trim();
     if(!s)return '';
-    var m=s.match(/(?:ch\.sooplive\.co\.kr|bj\.sooplive\.co\.kr|sooplive\.com\/station|colla\.bot\/station)\/([A-Za-z0-9_-]+)/i);
+    var m=s.match(/(?:ch\.sooplive\.co\.kr|bj\.sooplive\.co\.kr|sooplive\.com\/station)\/([A-Za-z0-9_-]+)/i);
     if(m)return m[1].toLowerCase();
     m=s.match(/^[A-Za-z0-9_-]{3,20}$/);
     return m?s.toLowerCase():'';
   }
-  function readPost(raw){
-    var m=String(raw||'').match(/\/station\/([^/?#]+)\/(?:post|board)\/(\d+)/);
-    return m?{id:m[1].toLowerCase(),no:m[2]}:null;
-  }
-  function readPosts(raw){
-    var out=[];
-    String(raw||'').split(/[\r\n,\s]+/).forEach(function(line){
-      var p=readPost(line);
-      if(p && !out.some(function(x){return x.id===p.id&&x.no===p.no;}))out.push(p);
-    });
-    return out;
-  }
   function station(id){ return 'https://ch.sooplive.co.kr/'+id; }
-  function postLink(p){ return 'https://www.sooplive.com/station/'+p.id+'/post/'+p.no; }
+  function noteTo(id){ return 'https://note.sooplive.co.kr/note/send?szTo='+encodeURIComponent(id); }
 
-  /* ---------- 번호·서명 ---------- */
+  /* ---------- 인증번호 ---------- */
   function hash(s){
     var h=2166136261>>>0;
     for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
     return h>>>0;
   }
   function verifyNum(id){
-    var n=hash('soop-verify::'+id)%1000000;
+    var n=hash(SECRET+'::soop-verify::'+id)%1000000;
     return ('00000'+n).slice(-6);
   }
-  function sign(id,no){
-    var a=hash(SECRET+'::'+id+'::'+no).toString(36);
-    var b=hash(id+'::'+no+'::'+SECRET).toString(36);
-    return (a.split('').reverse().join('')+b).replace(/[^a-z0-9]/g,'').slice(0,10);
-  }
 
-  /* ---------- 1·2단계 ---------- */
+  /* ---------- 1단계 ---------- */
   function refresh(){
     var id=readId($('sid').value);
     if(id){
       $('sidHint').innerHTML='확인된 아이디: <b style="color:var(--text)">'+id+'</b>';
       $('vnum').textContent=verifyNum(id);
       $('vnum').classList.remove('wait');
-      $('vnumInline').textContent=verifyNum(id);
     }else{
       $('sidHint').textContent=$('sid').value.trim()?'주소나 아이디를 알아볼 수 없습니다.':'';
       $('vnum').textContent='위에 아이디를 먼저 적어주세요';
       $('vnum').classList.add('wait');
-      $('vnumInline').textContent='------';
     }
   }
   $('sid').addEventListener('input',refresh);
-  $('post').addEventListener('input',function(){
-    var list=readPosts(this.value);
-    $('postHint').textContent = this.value.trim()
-      ? (list.length?'확인된 글: '+list.length+'개':'게시글 주소를 알아볼 수 없습니다.') : '';
-  });
 
-  /* ---------- 3단계 ---------- */
+  /* ---------- 2단계 ---------- */
   var made='';
   function tell(k,t){ var e=$('say'); e.className='say '+(k||''); e.textContent=t; }
   function build(){
@@ -362,39 +293,28 @@
     if(!id){ tell('no','방송국 주소 또는 아이디를 먼저 적어주세요.'); return; }
     var nick=$('nick').value.trim();
     if(!nick){ tell('no','방송 닉네임을 적어주세요.'); return; }
-    var list=readPosts($('post').value);
-    if(!list.length){ tell('no','순위를 띄울 게시글 주소를 적어주세요.'); return; }
 
     made=
-      '[UP순 랭킹 링크 신청]\n'+
+      '[오버레이 링크 신청]\n'+
       '아이디: '+id+'\n'+
-      '방송국: '+station(id)+'\n'+
       '닉네임: '+nick+'\n'+
-      '게시글:\n'+list.map(function(p){return '  '+postLink(p);}).join('\n')+'\n'+
+      '방송국: '+station(id)+'\n'+
       '인증번호: '+verifyNum(id)+'\n'+
-      '보낸 날짜: '+new Date().toLocaleDateString('ko-KR')+'\n'+
-      '※ 소개글에 인증번호를 넣은 캡처를 함께 보냅니다.';
+      '보낸 날짜: '+new Date().toLocaleDateString('ko-KR');
 
     $('paper').textContent=made;
     $('paper').classList.remove('empty');
-    tell('ok','신청서가 만들어졌습니다. 복사해서 캡처와 함께 보내주세요.');
+    tell('ok','신청서가 만들어졌습니다. 아래 버튼으로 쪽지 창을 열고 붙여넣어 주세요.');
 
     $('toNote').style.display='';
-    $('toNote').href='https://note.sooplive.co.kr/note/send?szTo='+encodeURIComponent(ADMIN_ID);
-
-    var subj=encodeURIComponent('UP순 링크 신청 - '+id);
-    var body=encodeURIComponent(made);
+    $('toNote').href=noteTo(ADMIN_ID);
     if(ADMIN_MAIL){
-      $('toGmail').style.display='';
       $('toMail').style.display='';
-      $('toGmail').href='https://mail.google.com/mail/?view=cm&fs=1&to='+
-        encodeURIComponent(ADMIN_MAIL)+'&su='+subj+'&body='+body;
-      $('toMail').href='mailto:'+ADMIN_MAIL+'?subject='+subj+'&body='+body;
-      $('mailAddr').textContent='메일 주소: '+ADMIN_MAIL;
-    }else{
-      $('toGmail').style.display='none';
-      $('toMail').style.display='none';
+      $('toMail').href='mailto:'+ADMIN_MAIL+
+        '?subject='+encodeURIComponent('오버레이 링크 신청 - '+id)+
+        '&body='+encodeURIComponent(made);
     }
+    if(navigator.clipboard)navigator.clipboard.writeText(made).catch(function(){});
   }
   $('build').addEventListener('click',build);
   $('copy').addEventListener('click',function(){
@@ -408,54 +328,73 @@
   if(P.get('admin')==='1'){
     $('adminBox').style.display='';
 
-    document.querySelectorAll('[data-sw]').forEach(function(l){
-      var c=l.querySelector('input');
-      c.addEventListener('change',function(){ l.classList.toggle('on',c.checked); });
-    });
+    var reply='', overlayUrl='';
 
-    $('aid').addEventListener('input',function(){
-      var id=readId(this.value);
-      if(!id){ $('avnum').textContent='------';$('avnum').classList.add('wait');
-        $('agov').href='#';return; }
+    function makeLinks(){
+      var id=readId($('aid').value);
+      var box=$('alinks');
+      if(!id){
+        $('avnum').textContent='------'; $('avnum').classList.add('wait');
+        $('aidHint').textContent=''; $('agov').href='#'; $('anote').href='#';
+        box.innerHTML=''; reply=''; overlayUrl=''; $('asay').textContent='';
+        return;
+      }
+      $('aidHint').innerHTML='확인된 아이디: <b style="color:var(--text)">'+id+'</b>';
       $('avnum').textContent=verifyNum(id);
       $('avnum').classList.remove('wait');
       $('agov').href=station(id);
-      if(!$('apost').value.trim())$('apost').value='https://www.sooplive.com/station/'+id+'/post/';
-    });
-    $('apost').addEventListener('input',function(){
-      var p=readPost(this.value);
-      $('apostHint').textContent = this.value.trim()
-        ? (p?'확인된 글번호: '+p.no:'게시글 주소를 알아볼 수 없습니다.') : '';
+      $('anote').href=noteTo(id);
+
+      var slug=$('aslug').value.trim()||'up2026';
+      var q=new URLSearchParams();
+      q.set('s',slug); q.set('me',id);
+      q.set('a',$('aaround').value); q.set('i',$('aitv').value);
+      overlayUrl=BASE+'overlay.html?'+q.toString();
+
+      var capUrl='';
+      if($('acap').checked){
+        var q2=new URLSearchParams();
+        q2.set('s',slug); q2.set('x','1');
+        capUrl=BASE+'applicants.html?'+q2.toString();
+      }
+
+      box.innerHTML='';
+      function card(title,url,desc){
+        var d=document.createElement('div'); d.className='linkbox';
+        var t=document.createElement('div'); t.className='t'; t.textContent=title;
+        var u=document.createElement('div'); u.className='u'; u.textContent=url;
+        var s2=document.createElement('div'); s2.className='d'; s2.textContent=desc;
+        d.appendChild(t); d.appendChild(u); d.appendChild(s2); box.appendChild(d);
+      }
+      card('방송화면용 오버레이', overlayUrl, 'OBS 브라우저 소스에 넣는 주소입니다.');
+      if(capUrl) card('순위표 + 스크린샷', capUrl, '스크린샷 버튼이 보이는 전체 순위표입니다.');
+
+      reply =
+        '['+($('aslug').value.trim()||'up2026')+'] 오버레이 링크입니다.\n\n'+
+        '▸ 방송화면용 오버레이\n'+overlayUrl+'\n\n'+
+        (capUrl ? '▸ 순위표 (스크린샷 버튼 포함)\n'+capUrl+'\n\n' : '')+
+        'OBS에서 소스 + → 브라우저 를 추가하고 URL 칸에 붙여넣으세요.\n'+
+        '너비 440, 높이 420 정도가 적당합니다. 배경은 투명입니다.\n'+
+        '내 줄이 금색으로 표시되고, 위아래 '+$('aaround').value+'명씩과의 UP 차이가 아래에 나옵니다.\n\n'+
+        '링크는 본인만 사용해주세요.\n\n— '+ADMIN_NICK;
+
+      $('asay').className='say';
+      $('asay').textContent='신청서의 인증번호가 위 숫자와 같은지, 쪽지 보낸 아이디가 같은지 확인해주세요.';
+    }
+
+    ['aid','aslug','aaround','aitv','acap'].forEach(function(k){
+      $(k).addEventListener('input',makeLinks);
+      $(k).addEventListener('change',makeLinks);
     });
 
-    var link='';
-    $('amake').addEventListener('click',function(){
-      var p=readPost($('apost').value);
-      var e=$('asay');
-      if(!p){ e.className='say no'; e.textContent='게시글 주소를 알아볼 수 없습니다.'; return; }
-      var q=new URLSearchParams();
-      q.set('post',postLink(p));
-      q.set('interval',$('aitv').value);
-      q.set('top',$('atop').value);
-      q.set('delta',$('adelta').checked?'1':'0');
-      q.set('profile',$('aprof').checked?'1':'0');
-      q.set('merge',$('amerge').checked?'1':'0');
-      if($('attl').value.trim())q.set('title',$('attl').value.trim());
-      q.set('k',sign(p.id,p.no));
-      link=OVERLAY_URL+'?'+q.toString();
-      $('alink').textContent=link;
-      $('alink').classList.remove('empty');
-      e.className='say ok';
-      e.textContent='이 주소를 신청자에게 보내주세요. OBS 브라우저 소스에 그대로 넣으면 됩니다.';
-    });
     $('acopy').addEventListener('click',function(){
-      if(!link)return;
-      if(navigator.clipboard)navigator.clipboard.writeText(link);
+      if(!reply){ $('asay').className='say no'; $('asay').textContent='먼저 아이디를 넣어주세요.'; return; }
+      if(navigator.clipboard)navigator.clipboard.writeText(reply);
       $('acopy').textContent='복사됨';
-      setTimeout(function(){$('acopy').textContent='복사';},1400);
+      setTimeout(function(){$('acopy').textContent='답장 문구 통째로 복사';},1400);
     });
     $('aopen').addEventListener('click',function(){
-      if(link)window.open(link,'_blank','noopener');
+      if(overlayUrl)window.open(overlayUrl,'_blank','noopener');
     });
   }
 

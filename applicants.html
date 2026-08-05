@@ -1265,7 +1265,8 @@
         if(!c)throw new Error('"'+slug+'" 라는 이름의 설정이 presets.json 안에 없습니다.');
         applyParams({
           post:c.p, relay:c.r||RELAY, cut:c.c, cutOn:c.cutOn,
-          interval:c.i, deadline:c.d, title:c.t, groups:c.g, cap:c.x
+          interval:P.get('i')||c.i, deadline:c.d, title:c.t, groups:c.g,
+          cap:(P.get('x')!=null?P.get('x'):c.x)
         });
       })
       .catch(function(e){ S.err=e.message||String(e); render(); });

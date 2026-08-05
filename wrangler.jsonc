@@ -1,8 +1,10 @@
 {
-  "name": "soop-up",
+  "name": "soop-up-collection",
+  "main": "worker.js",
   "compatibility_date": "2026-08-05",
   "workers_dev": true,
   "assets": {
-    "directory": "./"
+    "directory": "./",
+    "binding": "ASSETS"
   }
 }

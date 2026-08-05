@@ -425,9 +425,11 @@
           clearTimeout(killer);
           var m=e.message||String(e);
           if(m==='__stop__')return;
-          if(/Failed to fetch|NetworkError|CORS|load failed/i.test(m))
-            m='브라우저가 데이터 요청을 막았습니다 (CORS).\n'+
-              '설정의 "중계 주소" 칸을 채우면 해결됩니다.';
+          if(/Failed to fetch|NetworkError|CORS|load failed/i.test(m)){
+            m = S.relay
+              ? '중계 주소가 응답하지 않습니다.\n중계 주소가 맞는지, 그 서비스가 살아 있는지 확인해주세요.'
+              : 'SOOP이 이 페이지의 요청을 막았습니다 (CORS).\n설정의 "중계 주소" 칸을 채우면 해결됩니다.';
+          }
           S.err=m+'\n\n확인용 주소: '+apiUrl(1);
           render();
         });

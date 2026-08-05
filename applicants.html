@@ -12,6 +12,7 @@
     --text:#F2F4F9; --muted:#8A93A8; --dim:#616C85;
     --pill:#2B3450; --pill-hi:#3A4568; --edge:#252E44;
     --gold:#FFD166; --cut:#7C8CFF;
+    --ok:#5FD3A0; --warn:#FF8A78;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);}
@@ -101,7 +102,7 @@
 
   /* 순위 이동 표시 */
   .rankcell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
-  .mv{font-size:10.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;
+  .mv{font-size:11px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;
     font-style:normal;letter-spacing:0;}
   .mv.upm{color:var(--ok);} .mv.dnm{color:var(--warn);} .mv.newm{color:var(--cut);}
 
@@ -111,14 +112,15 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
   /* UP 증감 */
-  .updelta{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;
-    margin-left:8px;align-self:center;}
+  .updelta{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;
+    margin-left:8px;align-self:center;min-width:34px;}
   .updelta.plus{color:var(--ok);} .updelta.minus{color:var(--warn);}
 
   /* 자리 이동 후 잠깐 강조 */
-  .trow.rose{background:rgba(95,211,160,.075);}
-  .trow.fell{background:rgba(255,154,139,.06);}
+  .trow.rose{background:rgba(95,211,160,.11);}
+  .trow.fell{background:rgba(255,138,120,.09);}
   .trow.rose,.trow.fell{transition:background 1.2s ease;}
+  .trow.hot.rose,.trow.hot.fell{box-shadow:inset 3px 0 0 var(--gold);}
   .up svg{opacity:.75;flex:none;}
 
   /* 확정선 */
@@ -129,6 +131,19 @@
   }
   .cutline span{font-size:11.5px;font-weight:800;color:var(--cut);letter-spacing:.06em;}
   .cutline i{flex:1;height:1px;background:rgba(124,140,255,.25);}
+
+  /* 접전 */
+  .cutline.hotline{background:rgba(255,209,102,.09);
+    border-top-color:rgba(255,209,102,.45);border-bottom-color:rgba(255,209,102,.45);}
+  .cutline.hotline span{color:var(--gold);}
+  .cutline.hotline i{background:rgba(255,209,102,.3);}
+  .nmline{display:flex;align-items:center;gap:7px;min-width:0;}
+  .hotbadge{display:none;flex:none;font-size:10px;font-weight:800;color:#0A0D16;
+    background:var(--gold);border-radius:6px;padding:3px 7px;letter-spacing:-.01em;
+    animation:pulse 1.7s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .trow.hot .hotbadge{display:inline-block;}
+  .trow.hot{background:rgba(255,209,102,.06);box-shadow:inset 3px 0 0 var(--gold);}
 
   .msg{padding:44px 22px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.9;white-space:pre-line;}
   .msg.err{color:#FF9A8B;}
@@ -445,6 +460,12 @@
     }else{
       S.items.forEach(function(r,i){ r.grp=-1; r.rank=i+1; });
     }
+    S.items.forEach(function(r){
+      r.txt=unescapeText(r.txt);
+      r.ptxt=unescapeText(r.ptxt);
+      r.nick=unescapeText(r.nick);
+    });
+
     // 지난번과 비교해서 얼마나 오르내렸는지 계산
     var prev=S.prev||null;
     S.items.forEach(function(r){
@@ -487,6 +508,21 @@
           });
       })
       .then(function(){ S.busy=false; }, function(){ S.busy=false; });
+  }
+
+  /* ---------- 글자 정리 ---------- */
+  // SOOP이 <, >, & 같은 글자를 &lt; &gt; &amp; 로 바꿔서 보내줍니다. 원래대로 되돌립니다.
+  var _dec=document.createElement('textarea');
+  function unescapeText(v){
+    var t=String(v||'');
+    if(t.indexOf('&')<0)return t;
+    for(var i=0;i<2;i++){
+      _dec.innerHTML=t;
+      var next=_dec.value;
+      if(next===t)break;
+      t=next;
+    }
+    return t;
   }
 
   /* ---------- 자리 이동 애니메이션 ---------- */
@@ -578,13 +614,46 @@
         (S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
       return;
     }
+    // 커트라인 부근이 얼마나 붙어 있는지 계산
+    var hot=null;
+    if(S.cut>0 && !S.q && S.sortBy==='up' && S.sortDir===-1){
+      var inCut=null, outCut=null;
+      for(var i=0;i<rows.length;i++){
+        if(rows[i].rank===S.cut)inCut=rows[i];
+        if(rows[i].rank===S.cut+1)outCut=rows[i];
+      }
+      if(inCut&&outCut){
+        var mid=(inCut.up+outCut.up)/2;
+        // 접전으로 볼 UP 차이 — 경계 UP의 0.5%, 최대 100
+        var zone = Math.max(1, Math.min(100, Math.round(mid*0.005)));
+        // 경계 근처에 몇 명이나 몰려 있는지 센다
+        var above=0, below=0;
+        for(var k=0;k<rows.length;k++){
+          var d=rows[k].up-mid;
+          if(Math.abs(d)>zone)continue;
+          if(rows[k].rank<=S.cut)above++; else below++;
+        }
+        hot={
+          gap:inCut.up-outCut.up, mid:mid, zone:zone,
+          n:above+below,
+          // 경계 양쪽에 사람이 있고, 셋 이상이 몰려 있으면 접전
+          close:(above>0 && below>0 && above+below>=3)
+        };
+      }
+    }
+
     var cutDrawn=false;
     rows.forEach(function(r,i){
       // 확정선: UP 순위 기준이고 정렬이 기본일 때만
       if(!cutDrawn && S.cut>0 && !S.q && S.sortBy==='up' && S.sortDir===-1 && r.rank===S.cut+1){
         var c=document.createElement('div');
-        c.className='cutline';
-        c.innerHTML='<i></i><span>여기까지 '+S.cut+'명 확정</span><i></i>';
+        c.className='cutline'+(hot&&hot.close?' hotline':'');
+        c.innerHTML='<i></i><span>'+
+          (hot&&hot.close
+            ? '접전 · '+hot.n+'명이 '+hot.zone.toLocaleString('ko-KR')+' UP 안에서 경합 · '+
+              S.cut+'위와 '+(S.cut+1)+'위 차이 '+hot.gap.toLocaleString('ko-KR')+' UP'
+            : '여기까지 '+S.cut+'명 확정')+
+          '</span><i></i>';
         body.appendChild(c);
         cutDrawn=true;
       }
@@ -592,10 +661,12 @@
       var moved = r.dRank>0 ? ' rose' : r.dRank<0 ? ' fell' : '';
       el.className='trow'+(r.rank===1?' r1':r.rank===2?' r2':r.rank===3?' r3':'')+moved;
       el.dataset.key=r.key;
+      if(hot && hot.close && Math.abs(r.up-hot.mid)<=hot.zone) el.className+=' hot';
       el.innerHTML=
         '<div class="rankcell"><div class="rank">'+r.rank+'</div><div class="mv"></div></div>'+
         '<div class="who"><div class="ava"><span class="ini"></span></div>'+
-          '<div class="nmwrap"><div class="nm"></div><div class="cmt"></div></div></div>'+
+          '<div class="nmwrap"><div class="nmline"><div class="nm"></div>'+
+            '<span class="hotbadge">접전</span></div><div class="cmt"></div></div></div>'+
         '<div class="dt"></div>'+
         '<div class="upcell"><a class="up" target="_blank" rel="noopener">'+
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+

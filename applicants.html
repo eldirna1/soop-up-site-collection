@@ -214,7 +214,7 @@
     </div>
     <div class="f">
       <label>중계 주소 (실시간으로 보려면 필요합니다)</label>
-      <input id="relay" placeholder="https://내주소.deno.dev/list">
+      <input id="relay" placeholder="비우면 기본 중계기를 씁니다">
       <span class="ghint">비워두면 깃허브가 5분마다 모아둔 예비 자료로 보여줍니다.</span>
     </div>
     <div class="g2">
@@ -242,9 +242,14 @@
       <span class="ghint">댓글 내용에 그 낱말이 들어 있으면 그 부문으로 들어갑니다.
         답글이면 위 댓글의 내용을 먼저 봅니다.</span>
     </div>
+    <div class="f">
+      <label>짧은 이름 (선택) — 넣으면 아주 짧은 주소를 만들 수 있습니다</label>
+      <input id="slug" placeholder="영문 소문자로, 예: up2026">
+    </div>
     <div class="btns">
       <button id="apply">미리보기</button>
       <button id="make">공유 주소 만들기</button>
+      <button id="short">짧은 주소 만들기</button>
       <button id="copy">복사</button>
     </div>
     <div class="out" id="out"></div>
@@ -295,6 +300,10 @@
   'use strict';
   var $=function(i){return document.getElementById(i);};
   var P=new URLSearchParams(location.search);
+
+  /* ===== 내 중계기 주소 (바뀌면 여기만 고치세요) ===== */
+  var RELAY='https://tired-echidna-4498.soop-up-site-collection.deno.net/list';
+  /* ================================================= */
 
   var S={
     id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,prev:null,deadline:null,
@@ -731,7 +740,7 @@
   function applyParams(src){
     var p=parsePost(src.post);
     if(p){S.id=p.id;S.no=p.no;}
-    S.relay=src.relay||'';
+    S.relay=src.relay||RELAY;
     S.groups = parseGroups(src.groups||'');
     S.tab = S.groups.length?0:-1;
     S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
@@ -763,7 +772,26 @@
   });
 
   var G=function(s,l){var v=P.get(s);return v!=null?v:P.get(l);};
-  if(G('p','post')){
+
+  var slug=P.get('s');
+  if(slug){
+    // 저장해둔 설정을 이름으로 불러온다
+    $('msg').textContent='설정을 불러오는 중입니다…';
+    fetch('presets.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){
+        if(!r.ok)throw new Error('presets.json 을 읽지 못했습니다. ('+r.status+')');
+        return r.json();
+      })
+      .then(function(all){
+        var c=all&&all[slug];
+        if(!c)throw new Error('"'+slug+'" 라는 이름의 설정이 presets.json 안에 없습니다.');
+        applyParams({
+          post:c.p, relay:c.r||RELAY, cut:c.c, cutOn:c.cutOn,
+          interval:c.i, deadline:c.d, title:c.t, groups:c.g
+        });
+      })
+      .catch(function(e){ S.err=e.message||String(e); render(); });
+  } else if(G('p','post')){
     applyParams({
       post:G('p','post'), relay:G('r','relay'), cut:G('c','cut'), cutOn:P.get('cutOn'),
       interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title'),
@@ -801,16 +829,50 @@
       if(!pp){ $('out').textContent='게시글 주소를 알아볼 수 없습니다.';return; }
       var q=new URLSearchParams();
       q.set('p',pp.id+'/'+pp.no);
-      if(v.relay)q.set('r',v.relay);
+      if(v.relay&&v.relay!==RELAY)q.set('r',v.relay);
       q.set('c',v.cutOn==='1'?String(Number(v.cut)||0):'0');
       q.set('i',v.interval);
       if(v.title&&v.title!=='지원자 UP 순위')q.set('t',v.title);
       if(v.groups)q.set('g',v.groups);
       if(v.deadline)q.set('d',v.deadline);
+      $('out').dataset.url='';
       $('out').textContent=location.origin+location.pathname+'?'+q.toString();
     });
+    $('short').addEventListener('click',function(){
+      var v=read(), pp=parsePost(v.post);
+      var name=$('slug').value.trim().toLowerCase();
+      if(!pp){ $('out').textContent='게시글 주소를 알아볼 수 없습니다.';return; }
+      if(!/^[a-z0-9-]{2,24}$/.test(name)){
+        $('out').textContent='짧은 이름을 영문 소문자·숫자·하이픈으로 2~24자 넣어주세요.';return;
+      }
+      var conf={ p:pp.id+'/'+pp.no };
+      conf.c = v.cutOn==='1'?String(Number(v.cut)||0):'0';
+      conf.i = v.interval;
+      if(v.title&&v.title!=='지원자 UP 순위')conf.t=v.title;
+      if(v.groups)conf.g=v.groups;
+      if(v.deadline)conf.d=v.deadline;
+      if(v.relay&&v.relay!==RELAY)conf.r=v.relay;
+
+      var line='  "'+name+'": '+JSON.stringify(conf);
+      var url=location.origin+location.pathname+'?s='+name;
+      $('out').innerHTML='';
+      var a=document.createElement('div');
+      a.textContent='① 저장소의 presets.json 에 아래 줄을 넣고 저장하세요:';
+      var b=document.createElement('div');
+      b.style.cssText='margin:6px 0 12px;color:var(--text);user-select:all;';
+      b.textContent=line+',';
+      var c2=document.createElement('div');
+      c2.textContent='② 그러면 이 주소로 열립니다 (복사 버튼은 이 주소를 복사합니다):';
+      var d=document.createElement('div');
+      d.style.cssText='margin-top:6px;color:var(--cut);';
+      d.textContent=url;
+      $('out').appendChild(a);$('out').appendChild(b);
+      $('out').appendChild(c2);$('out').appendChild(d);
+      $('out').dataset.url=url;
+    });
+
     $('copy').addEventListener('click',function(){
-      var t=$('out').textContent;
+      var t=$('out').dataset.url||$('out').textContent;
       if(!t||t.indexOf('http')!==0)return;
       if(navigator.clipboard)navigator.clipboard.writeText(t);
       $('copy').textContent='복사됨';

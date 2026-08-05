@@ -126,6 +126,21 @@
   .btns button{font:inherit;font-size:12.5px;font-weight:700;color:var(--text);background:var(--pill);
     border:1px solid var(--edge);border-radius:9px;padding:9px 15px;cursor:pointer;}
   .btns button:hover{background:var(--pill-hi);}
+  /* 부문 나누기 */
+  .grp{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-bottom:7px;}
+  .ghint{font-size:11px;color:var(--dim);line-height:1.7;}
+
+  /* 부문 탭 */
+  .tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 18px 0;}
+  .tabs button{
+    font:inherit;font-size:13px;font-weight:800;letter-spacing:-.01em;
+    color:var(--muted);background:var(--panel);border:1px solid var(--edge);
+    border-radius:10px;padding:9px 15px;cursor:pointer;transition:all .13s ease;
+  }
+  .tabs button:hover{color:var(--text);}
+  .tabs button.on{color:#0A0D16;background:var(--gold);border-color:var(--gold);}
+  .tabs button .n{font-weight:700;opacity:.7;margin-left:5px;font-size:12px;}
+
   .out{margin-top:11px;font-size:11.5px;color:var(--muted);word-break:break-all;line-height:1.7;}
 
   /* 켜기/끄기 스위치 */
@@ -176,6 +191,14 @@
         <select id="itv"><option value="15">15초</option><option value="30" selected>30초</option>
         <option value="60">1분</option></select></div>
     </div>
+    <div class="f">
+      <label>부문 나누기 (비우면 나누지 않습니다)</label>
+      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 버튜버)"><input class="gk" placeholder="찾을 낱말 (쉼표로 여러 개)"></div>
+      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 남자)"><input class="gk" placeholder="찾을 낱말"></div>
+      <div class="grp"><input class="gn" placeholder="부문 이름 (예: 인기 신입)"><input class="gk" placeholder="찾을 낱말"></div>
+      <span class="ghint">댓글 내용에 그 낱말이 들어 있으면 그 부문으로 들어갑니다.
+        답글이면 위 댓글의 내용을 먼저 봅니다.</span>
+    </div>
     <div class="btns">
       <button id="apply">미리보기</button>
       <button id="make">공유 주소 만들기</button>
@@ -201,6 +224,7 @@
   </div>
 
   <div class="table">
+    <div class="tabs" id="tabs" style="display:none"></div>
     <div class="thead">
       <div class="th c">순위</div>
       <div class="namecol">
@@ -231,6 +255,7 @@
 
   var S={
     id:'',no:'',relay:'',cut:25,cutOn:true,interval:30,deadline:null,
+    groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
 
@@ -257,6 +282,7 @@
   var UID=['user_id','userId','userid','writer_id','id'];
   var DATE=['reg_date','regDate','regDatetime','created_at','createdAt','write_date','wr_date','date'];
   var IMG=['profile_image','profileImage','profileImageUrl','profile_img','profileImg','photo','thumbnail'];
+  var TEXT=['comment','content','contents','text','memo','body','message','comment_text','commentText'];
 
   function pick(o,c,num){
     for(var i=0;i<c.length;i++){var k=c[i];if(!(k in o))continue;var v=o[k];
@@ -285,7 +311,7 @@
       var nk=pick(s,NICK,false),uk=pick(s,UP,true);
       if(!nk||!uk)continue;
       if(!best||a.length>best.a.length)
-        best={a:a,nk:nk,uk:uk,idk:pick(s,UID,false),dk:pick(s,DATE,false),imk:pickImg(s)};
+        best={a:a,nk:nk,uk:uk,idk:pick(s,UID,false),dk:pick(s,DATE,false),imk:pickImg(s),tk:pick(s,TEXT,false)};
     }
     return best;
   }
@@ -298,23 +324,55 @@
   }
   function flat(f){
     var out=[];
-    function push(r){
+    function push(r,ptxt){
       if(!r||typeof r!=='object')return;
       var nick=String(r[f.nk]==null?'':r[f.nk]).trim();
-      if(!nick)return;
-      var uid=f.idk?String(r[f.idk]==null?'':r[f.idk]):'';
+      var txt=f.tk?String(r[f.tk]==null?'':r[f.tk]):'';
+      if(nick)
       out.push({
-        nick:nick, up:Number(r[f.uk])||0, uid:uid,
+        nick:nick, up:Number(r[f.uk])||0, uid:(f.idk?String(r[f.idk]==null?'':r[f.idk]):''),
         date:f.dk?String(r[f.dk]||''):'',
-        img:avatar(uid,f.imk?r[f.imk]:''),
-        key:uid||('n:'+nick)
+        img:avatar(f.idk?String(r[f.idk]==null?'':r[f.idk]):'',f.imk?r[f.imk]:''),
+        txt:txt, ptxt:ptxt||'',
+        key:(f.idk&&r[f.idk])?String(r[f.idk]):('n:'+nick)
       });
       for(var k in r){var v=r[k];
         if(Array.isArray(v)&&v.length&&typeof v[0]==='object'&&v[0]&&(f.nk in v[0]))
-          for(var i=0;i<v.length;i++)push(v[i]);}
+          for(var i=0;i<v.length;i++)push(v[i], txt||ptxt);}
     }
-    for(var i=0;i<f.a.length;i++)push(f.a[i]);
+    for(var i=0;i<f.a.length;i++)push(f.a[i],'');
     return out;
+  }
+
+  /* ---------- 부문 나누기 ---------- */
+  function norm(s){ return String(s||'').toLowerCase().replace(/\s+/g,''); }
+  function hit(txt,g){
+    var t=norm(txt); if(!t)return false;
+    for(var j=0;j<g.keys.length;j++){
+      var k=norm(g.keys[j]);
+      if(k&&t.indexOf(k)>=0)return true;
+    }
+    return false;
+  }
+  function classify(r){
+    var G=S.groups,i;
+    if(!G.length)return -1;
+    for(i=0;i<G.length;i++) if(hit(r.ptxt,G[i])) return i;   // 답글이면 위 댓글 먼저
+    for(i=0;i<G.length;i++) if(hit(r.txt,G[i]))  return i;   // 그다음 자기 댓글
+    return -1;
+  }
+  function parseGroups(s){
+    var out=[];
+    String(s||'').split('|').forEach(function(part){
+      var p=part.split('~');
+      var name=(p[0]||'').trim();
+      if(!name)return;
+      out.push({name:name, keys:(p[1]||p[0]).split(',').map(function(x){return x.trim();}).filter(Boolean)});
+    });
+    return out;
+  }
+  function groupsToParam(){
+    return S.groups.map(function(g){return g.name+'~'+g.keys.join(',');}).join('|');
   }
 
   /* ---------- 가져오기 ---------- */
@@ -349,7 +407,16 @@
       got.forEach(function(r){ if(!map[r.key]||r.up>map[r.key].up)map[r.key]=r; });
       S.items=Object.keys(map).map(function(k){return map[k];});
       S.items.sort(function(a,b){return b.up-a.up;});
-      S.items.forEach(function(r,i){ r.rank=i+1; });
+      if(S.groups.length){
+        var n={};
+        S.items.forEach(function(r){
+          r.grp=classify(r);
+          n[r.grp]=(n[r.grp]||0)+1;
+          r.rank=n[r.grp];                 // 부문 안에서의 순위
+        });
+      }else{
+        S.items.forEach(function(r,i){ r.grp=-1; r.rank=i+1; });
+      }
       S.err='';S.lastAt=new Date();render();
     }
     step();
@@ -358,6 +425,7 @@
   /* ---------- 그리기 ---------- */
   function view(){
     var rows=S.items.slice();
+    if(S.groups.length) rows=rows.filter(function(r){return r.grp===S.tab;});
     if(S.q){
       var q=S.q.toLowerCase();
       rows=rows.filter(function(r){return r.nick.toLowerCase().indexOf(q)>=0;});
@@ -369,15 +437,42 @@
     return rows;
   }
 
+  function drawTabs(){
+    var box=$('tabs');
+    if(!S.groups.length){ box.style.display='none'; box.innerHTML=''; return; }
+    var count={};
+    S.items.forEach(function(r){ count[r.grp]=(count[r.grp]||0)+1; });
+    var tabs=S.groups.map(function(g,i){ return {k:i,name:g.name}; });
+    if(count[-1]) tabs.push({k:-1,name:'기타'});
+    if(!tabs.some(function(t){return t.k===S.tab;})) S.tab=tabs[0].k;
+    box.style.display='';
+    box.innerHTML='';
+    tabs.forEach(function(t){
+      var b=document.createElement('button');
+      if(t.k===S.tab)b.className='on';
+      b.innerHTML='<span></span><span class="n">'+(count[t.k]||0)+'</span>';
+      b.querySelector('span').textContent=t.name;
+      b.addEventListener('click',function(){ S.tab=t.k; render(); });
+      box.appendChild(b);
+    });
+  }
+
   function render(){
     var body=$('body');
     if(S.err){ body.innerHTML='';
       var e=document.createElement('div');e.className='msg err';e.textContent=S.err;body.appendChild(e);
-      $('stat').textContent='';return; }
+      $('stat').textContent='';$('tabs').style.display='none';return; }
     if(!S.items.length){ body.innerHTML='<div class="msg">아직 지원자가 없습니다.</div>';return; }
 
+    drawTabs();
     var rows=view();
     body.innerHTML='';
+    if(!rows.length){
+      body.innerHTML='<div class="msg">이 부문에 해당하는 지원자가 없습니다.</div>';
+      $('stat').textContent='지원자 '+S.items.length+'명'+
+        (S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
+      return;
+    }
     var cutDrawn=false;
     rows.forEach(function(r,i){
       // 확정선: UP 순위 기준이고 정렬이 기본일 때만
@@ -413,8 +508,12 @@
       body.appendChild(el);
     });
 
-    $('stat').textContent='지원자 '+S.items.length+'명'+
-      (S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
+    var head='지원자 '+S.items.length+'명';
+    if(S.groups.length){
+      var g=S.groups[S.tab];
+      head=(g?g.name:'기타')+' '+rows.length+'명 · 전체 '+S.items.length+'명';
+    }
+    $('stat').textContent=head+(S.lastAt?' · '+S.lastAt.toLocaleTimeString('ko-KR')+' 기준':'');
   }
 
   /* ---------- 마감 시계 ---------- */
@@ -435,6 +534,8 @@
     var p=parsePost(src.post);
     if(p){S.id=p.id;S.no=p.no;}
     S.relay=src.relay||'';
+    S.groups = parseGroups(src.groups||'');
+    S.tab = S.groups.length?0:-1;
     S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
     S.cut = S.cutOn ? Number(src.cut||0) : 0;
     S.interval=Number(src.interval||30);
@@ -467,7 +568,8 @@
   if(G('p','post')){
     applyParams({
       post:G('p','post'), relay:G('r','relay'), cut:G('c','cut'), cutOn:P.get('cutOn'),
-      interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title')
+      interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title'),
+      groups:G('g','groups')
     });
   } else {
     var syncSw=function(){
@@ -479,10 +581,20 @@
     syncSw();
     $('setup').style.display='';
     $('msg').textContent='위에서 게시글 주소를 넣고 미리보기를 눌러주세요.';
+    var readGroups=function(){
+      var ns=document.querySelectorAll('.grp .gn'), ks=document.querySelectorAll('.grp .gk'), out=[];
+      for(var i=0;i<ns.length;i++){
+        var n=ns[i].value.trim(); if(!n)continue;
+        var k=ks[i].value.trim()||n;
+        out.push(n+'~'+k.split(',').map(function(x){return x.trim();}).filter(Boolean).join(','));
+      }
+      return out.join('|');
+    };
     var read=function(){
       return { post:$('postUrl').value, relay:$('relay').value.trim(),
                cut:$('cut').value, cutOn:$('cutOn').checked?'1':'0',
                interval:$('itv').value, title:$('ttl').value,
+               groups:readGroups(),
                deadline:$('dl').value||'' };
     };
     $('apply').addEventListener('click',function(){ applyParams(read()); });
@@ -495,6 +607,7 @@
       q.set('c',v.cutOn==='1'?String(Number(v.cut)||0):'0');
       q.set('i',v.interval);
       if(v.title&&v.title!=='지원자 UP 순위')q.set('t',v.title);
+      if(v.groups)q.set('g',v.groups);
       if(v.deadline)q.set('d',v.deadline);
       $('out').textContent=location.origin+location.pathname+'?'+q.toString();
     });

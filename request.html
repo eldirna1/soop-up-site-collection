@@ -152,7 +152,8 @@
   <!-- 2 -->
   <div class="step">
     <h2><span class="no">2</span>쪽지로 보내기</h2>
-    <p class="lead">아래 버튼을 누르면 쪽지 창이 열립니다. 신청서를 붙여넣고 보내주세요.</p>
+    <p class="lead">신청서는 자동으로 복사됩니다. 아래 버튼으로 방송국을 열고,
+       <b>쪽지</b> 버튼을 눌러 붙여넣어 보내주세요.</p>
 
     <div class="paper empty" id="paper">1번을 채우면 신청서가 여기에 만들어집니다.</div>
     <div class="btns">
@@ -162,7 +163,7 @@
     <div class="say" id="say"></div>
 
     <div class="where">
-      <a id="toNote" href="#" target="_blank" rel="noopener" style="display:none" class="big">SOOP 쪽지 창 열기</a>
+      <a id="toNote" href="#" target="_blank" rel="noopener" style="display:none" class="big">받는 사람 방송국 열기</a>
       <a id="toMail" href="#" style="display:none">메일로 보내기</a>
     </div>
   </div>
@@ -210,7 +211,7 @@
     </div>
     <div class="where" style="margin-top:0">
       <a id="agov" href="#" target="_blank" rel="noopener">방송국 열어보기</a>
-      <a id="anote" href="#" target="_blank" rel="noopener">이 사람에게 쪽지 쓰기</a>
+      <a id="anote" href="#" target="_blank" rel="noopener">이 사람 방송국 열기 (쪽지)</a>
     </div>
 
     <div class="divide"></div>
@@ -275,7 +276,7 @@
     return m?s.toLowerCase():'';
   }
   function station(id){ return 'https://ch.sooplive.co.kr/'+id; }
-  function noteTo(id){ return 'https://note.sooplive.co.kr/note/send?szTo='+encodeURIComponent(id); }
+  function noteTo(id){ return station(id); }   // 방송국에서 쪽지 버튼을 누르면 됩니다
 
   /* ---------- 인증번호 ---------- */
   function hash(s){
@@ -318,11 +319,11 @@
       '닉네임: '+nick+'\n'+
       '방송국: '+station(id)+'\n'+
       '인증번호: '+verifyNum(id)+'\n'+
-      '보낸 날짜: '+new Date().toLocaleDateString('ko-KR');
+      '보낸 시각: '+new Date().toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
 
     $('paper').textContent=made;
     $('paper').classList.remove('empty');
-    tell('ok','신청서가 만들어졌습니다. 아래 버튼으로 쪽지 창을 열고 붙여넣어 주세요.');
+    tell('ok','신청서가 복사됐습니다. 아래 버튼으로 방송국을 열고, 쪽지 버튼을 눌러 붙여넣어 주세요.');
 
     $('toNote').style.display='';
     $('toNote').href=noteTo(ADMIN_ID);
@@ -398,14 +399,12 @@
         '▸ 오버레이 (배경 살짝 비침)\n'+overlayUrl+'\n\n'+
         '▸ 오버레이 (배경 불투명)\n'+solidUrl+'\n\n'+
         '둘 중 마음에 드는 쪽을 쓰시면 됩니다.\n\n'+
-        (capUrl ? '▸ 순위표 (스크린샷 버튼 포함)\n'+capUrl+'\n\n' : '')+
         'OBS에서 소스 + → 브라우저 를 추가하고 URL 칸에 붙여넣으세요.\n'+
-        '너비 440, 높이 420 정도가 적당합니다. 배경은 투명입니다.\n'+
-        '내 줄이 금색으로 표시되고, 위아래 '+$('aaround').value+'명씩과의 UP 차이가 아래에 나옵니다.\n'+
-        '배경 진하기를 바꾸고 싶으면, 브라우저로 그 주소를 연 뒤 마우스를 움직이면\n'+
-        '오른쪽 위에 톱니 모양이 나타납니다. 거기서 조절하고 주소를 다시 복사하세요.\n'+
-        '(OBS 화면에는 톱니가 안 보이니 걱정 안 하셔도 됩니다.)\n\n'+
-        '링크는 본인만 사용해주세요.\n\n— '+ADMIN_NICK;
+        '너비 400, 높이 390 정도가 적당합니다.\n'+
+        '너비의 크기를 더 넓게 혹은 더 좁게 하시면 그만큼 좁아지고 넓어집니다.\n'+
+        '내 줄이 금색으로 표시되고, 위아래 '+$('aaround').value+'명씩과의 UP 차이가 아래에 나옵니다.\n\n'+
+        '링크는 본인만 사용해주세요.\n\n'+
+        '개발자: '+ADMIN_NICK;
 
       $('asay').className='say';
       $('asay').textContent='신청서의 인증번호가 위 숫자와 같은지, 쪽지 보낸 아이디가 같은지 확인해주세요.';

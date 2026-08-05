@@ -218,6 +218,16 @@
   .thead.slim .th{display:none;}
   .thead.slim .namecol{width:100%;}
 
+  /* 페이지 이동 버튼 */
+  .navbar{display:flex;justify-content:flex-end;margin-bottom:12px;}
+  .navbtn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+    font-size:13px;font-weight:800;letter-spacing:-.01em;color:#0A0D16;
+    background:var(--gold);border:1px solid var(--gold);border-radius:11px;
+    padding:11px 17px;transition:opacity .13s ease, transform .13s ease;}
+  .navbtn:hover{opacity:.87;transform:translateY(-1px);}
+  .navbtn .who{flex:none;font-size:10.5px;font-weight:800;
+    background:rgba(10,13,22,.22);border-radius:6px;padding:3px 7px;}
+
   /* 댓글 보기 창 */
   .sheet{position:fixed;inset:0;z-index:60;display:none;
     align-items:center;justify-content:center;padding:24px;
@@ -354,6 +364,12 @@
     <div class="out" id="out"></div>
   </div>
 
+  <div class="navbar">
+    <a class="navbtn go" href="request.html">
+      오버레이 링크 신청하기 <span class="who">스트리머</span>
+    </a>
+  </div>
+
   <div class="hero">
     <div>
       <h1 id="title">지원자 UP 순위</h1>
@@ -395,6 +411,21 @@
   <div class="foot">
     <span id="stat"></span>
     <span>추천수를 누르면 댓글 내용이 보이고, 프로필 사진을 누르면 방송국으로 이동합니다.</span>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="sheetbox">
+    <div class="sheettop">
+      <div class="ava" id="shAva"><span class="ini"></span></div>
+      <div class="sheetwho"><b id="shNick"></b><span id="shMeta"></span></div>
+      <button class="sheetclose" id="shClose">닫기</button>
+    </div>
+    <div class="sheetbody" id="shBody"></div>
+    <div class="sheetfoot">
+      <a id="shStation" href="#" target="_blank" rel="noopener">방송국 열기</a>
+      <a id="shPost" href="#" target="_blank" rel="noopener">SOOP 게시글로 이동</a>
+    </div>
   </div>
 </div>
 
@@ -1365,19 +1396,5 @@
 })();
 </script>
 
-<div class="sheet" id="sheet">
-  <div class="sheetbox">
-    <div class="sheettop">
-      <div class="ava" id="shAva"><span class="ini"></span></div>
-      <div class="sheetwho"><b id="shNick"></b><span id="shMeta"></span></div>
-      <button class="sheetclose" id="shClose">닫기</button>
-    </div>
-    <div class="sheetbody" id="shBody"></div>
-    <div class="sheetfoot">
-      <a id="shStation" href="#" target="_blank" rel="noopener">방송국 열기</a>
-      <a id="shPost" href="#" target="_blank" rel="noopener">SOOP 게시글로 이동</a>
-    </div>
-  </div>
-</div>
 </body>
 </html>

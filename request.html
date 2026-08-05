@@ -20,6 +20,13 @@
     -webkit-font-smoothing:antialiased;}
   .wrap{max-width:720px;margin:0 auto;}
 
+  .navbar{display:flex;margin-bottom:12px;}
+  .navbtn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--text);
+    background:var(--pill);border:1px solid var(--edge);border-radius:11px;
+    padding:11px 17px;transition:background .13s ease, transform .13s ease;}
+  .navbtn:hover{background:var(--pill-hi);transform:translateY(-1px);}
+
   .hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;}
   .hero h1{margin:0 0 10px;font-size:29px;font-weight:900;letter-spacing:-.04em;line-height:1.15;}
   .hero p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.85;}
@@ -107,6 +114,10 @@
 </head>
 <body>
 <div class="wrap">
+
+  <div class="navbar">
+    <a class="navbtn" id="toRank" href="applicants.html?s=up2026">← 순위표 보러 가기</a>
+  </div>
 
   <div class="hero">
     <h1>오버레이 링크 신청</h1>

@@ -90,6 +90,17 @@
 
   .foot{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;text-align:center;}
 
+  .rulebox{border-color:rgba(255,209,102,.34);background:linear-gradient(180deg,
+    rgba(255,209,102,.07),rgba(20,26,43,.6));}
+  .rulebox>h2 .no{color:var(--gold);border-color:rgba(255,209,102,.4);}
+  .rulebox .lead b{color:var(--gold);font-weight:800;}
+  .rulebox .rules li::before{color:var(--gold);}
+
+  .notice{margin-top:18px;padding:16px 20px;text-align:center;
+    background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.38);
+    border-radius:13px;font-size:13px;color:var(--muted);line-height:1.9;}
+  .notice b{display:block;font-size:14px;font-weight:800;color:var(--gold);margin-bottom:3px;}
+
   /* 관리자 */
   .admin{border-color:var(--gold);}
   .admin>h2 .no{color:var(--gold);}
@@ -122,8 +133,19 @@
   <div class="hero">
     <h1>오버레이 링크 신청</h1>
     <p>내 순위를 <b>방송화면에 실시간으로 띄우는 링크</b>를 만들어 드립니다.<br>
-       아래를 채우고 <b>SOOP 쪽지</b>로 보내주시면, 확인 후 링크를 답장으로 보내드립니다.<br>
-       받는 사람: <b id="whoTo"></b></p>
+       아래를 채우고 <b>SOOP 쪽지</b>로 보내주시면, 확인 후 링크를 답장으로 보내드립니다.</p>
+  </div>
+
+  <div class="step rulebox">
+    <h2><span class="no">i</span>발급 기준</h2>
+    <p class="lead">아래를 만족하면 쪽지를 확인 후 빠른 시간 내로 링크를 보내드립니다.<br>
+      <b>(개발자가 외부에 있을 시 답변이 느릴 수 있습니다.)</b></p>
+    <ul class="rules">
+      <li>컨텐츠에 실제로 지원한 스트리머일 것 (댓글이 목록에 있어야 합니다)</li>
+      <li>신청서에 적은 아이디와 쪽지를 보낸 아이디가 같을 것</li>
+      <li>컨텐츠 조건에 부합한 스트리머일 것</li>
+      <li>받은 링크를 다른 사람에게 넘기지 말 것</li>
+    </ul>
   </div>
 
   <!-- 1 -->
@@ -183,18 +205,6 @@
       위아래 두 명씩과의 UP 차이가 아래에 나옵니다.</p>
   </div>
 
-  <!-- 안내 -->
-  <div class="step">
-    <h2><span class="no">i</span>발급 기준</h2>
-    <p class="lead">아래를 만족하면 보통 하루 안에 링크를 보내드립니다.</p>
-    <ul class="rules">
-      <li>대회에 실제로 지원한 스트리머일 것 (댓글이 목록에 있어야 합니다)</li>
-      <li>신청서에 적은 아이디와 쪽지를 보낸 아이디가 같을 것</li>
-      <li>최근 30일 안에 방송 기록이 있을 것</li>
-      <li>받은 링크를 다른 사람에게 넘기지 말 것</li>
-    </ul>
-  </div>
-
   <!-- 관리자 -->
   <div class="step admin" id="adminBox" style="display:none">
     <h2><span class="no">★</span>관리자 · 링크 만들기</h2>
@@ -246,7 +256,10 @@
     <div class="say" id="asay"></div>
   </div>
 
-  <div class="foot">답변까지 보통 하루 정도 걸립니다. 3일이 지나도 연락이 없으면 다시 보내주세요.</div>
+  <div class="notice">
+    <b>개발자가 외부에 있을 시 답변이 느릴 수 있습니다.</b>
+    1시간 내로 답변 없을 시 다시 보내주세요.
+  </div>
 </div>
 
 <script>
@@ -264,7 +277,6 @@
 
   var BASE = location.href.replace(/[^/]*$/,'');   // 같은 폴더 기준
 
-  $('whoTo').textContent = ADMIN_NICK+' ('+ADMIN_ID+')';
 
   /* ---------- 주소 읽기 ---------- */
   function readId(raw){

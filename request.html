@@ -229,13 +229,10 @@
           <option value="5">5초</option><option value="10" selected>10초</option>
           <option value="15">15초</option><option value="30">30초</option>
         </select></div>
-      <div class="f"><label>배경 진하기</label>
-        <select id="abg">
-          <option value="">스트리머가 직접 고르게</option>
-          <option value="100">불투명 (100%)</option>
-          <option value="92" selected>기본 (92%)</option>
-          <option value="55">반투명 (55%)</option>
-          <option value="0">완전 투명 (0%)</option>
+      <div class="f"><label>확정 인원 표시</label>
+        <select id="acut">
+          <option value="1" selected>확정선 보이기</option>
+          <option value="0">확정선 숨기기</option>
         </select></div>
     </div>
     <label class="check"><input type="checkbox" id="acap"><span>순위표 스크린샷 권한도 같이 주기</span></label>
@@ -370,8 +367,10 @@
       var q=new URLSearchParams();
       q.set('s',slug); q.set('me',id);
       q.set('a',$('aaround').value); q.set('i',$('aitv').value);
-      if($('abg').value!=='')q.set('bg',$('abg').value);
+      if($('acut').value==='0')q.set('c','0');
       overlayUrl=BASE+'overlay.html?'+q.toString();
+      var q3=new URLSearchParams(q.toString()); q3.set('bg','100');
+      var solidUrl=BASE+'overlay.html?'+q3.toString();
 
       var capUrl='';
       if($('acap').checked){
@@ -388,12 +387,17 @@
         var s2=document.createElement('div'); s2.className='d'; s2.textContent=desc;
         d.appendChild(t); d.appendChild(u); d.appendChild(s2); box.appendChild(d);
       }
-      card('방송화면용 오버레이', overlayUrl, 'OBS 브라우저 소스에 넣는 주소입니다.');
+      card('오버레이 — 지금 모습 (배경 살짝 비침)', overlayUrl,
+           '방송 화면이 은은하게 비쳐 보입니다. 기본값입니다.');
+      card('오버레이 — 배경 불투명', solidUrl,
+           '뒤가 전혀 안 비칩니다. 화면이 복잡할 때 글씨가 더 잘 보입니다.');
       if(capUrl) card('순위표 + 스크린샷', capUrl, '스크린샷 버튼이 보이는 전체 순위표입니다.');
 
       reply =
         '['+($('aslug').value.trim()||'up2026')+'] 오버레이 링크입니다.\n\n'+
-        '▸ 방송화면용 오버레이\n'+overlayUrl+'\n\n'+
+        '▸ 오버레이 (배경 살짝 비침)\n'+overlayUrl+'\n\n'+
+        '▸ 오버레이 (배경 불투명)\n'+solidUrl+'\n\n'+
+        '둘 중 마음에 드는 쪽을 쓰시면 됩니다.\n\n'+
         (capUrl ? '▸ 순위표 (스크린샷 버튼 포함)\n'+capUrl+'\n\n' : '')+
         'OBS에서 소스 + → 브라우저 를 추가하고 URL 칸에 붙여넣으세요.\n'+
         '너비 440, 높이 420 정도가 적당합니다. 배경은 투명입니다.\n'+
@@ -407,7 +411,7 @@
       $('asay').textContent='신청서의 인증번호가 위 숫자와 같은지, 쪽지 보낸 아이디가 같은지 확인해주세요.';
     }
 
-    ['aid','aslug','aaround','aitv','abg','acap'].forEach(function(k){
+    ['aid','aslug','aaround','aitv','acut','acap'].forEach(function(k){
       $(k).addEventListener('input',makeLinks);
       $(k).addEventListener('change',makeLinks);
     });

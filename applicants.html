@@ -69,7 +69,7 @@
   .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5;}
   .namecol{display:flex;align-items:center;gap:14px;}
 
-  .trow{height:65px;border-bottom:1px solid rgba(255,255,255,.045);}
+  .trow{height:65px;border-bottom:1px solid rgba(255,255,255,.045);will-change:transform;}
   .trow:last-child{border-bottom:none;}
   .trow:hover{background:rgba(255,255,255,.022);}
   .rank{
@@ -80,6 +80,7 @@
   .trow.r2 .rank{color:#D7DEF0;}
   .trow.r3 .rank{color:#E0A177;}
   .who{display:flex;align-items:center;gap:13px;min-width:0;}
+  .upcell{align-items:center;}
   .ava{
     position:relative;width:38px;height:38px;border-radius:50%;overflow:hidden;flex:none;
     background:#212940;border:1px solid var(--edge);
@@ -97,6 +98,27 @@
     font-variant-numeric:tabular-nums;letter-spacing:-.02em;transition:background .13s ease;
   }
   .up:hover{background:var(--pill-hi);}
+
+  /* 순위 이동 표시 */
+  .rankcell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .mv{font-size:10.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;
+    font-style:normal;letter-spacing:0;}
+  .mv.upm{color:var(--ok);} .mv.dnm{color:var(--warn);} .mv.newm{color:var(--cut);}
+
+  /* 댓글 한 줄 */
+  .nmwrap{min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .cmt{font-size:12px;color:var(--dim);line-height:1.4;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* UP 증감 */
+  .updelta{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;
+    margin-left:8px;align-self:center;}
+  .updelta.plus{color:var(--ok);} .updelta.minus{color:var(--warn);}
+
+  /* 자리 이동 후 잠깐 강조 */
+  .trow.rose{background:rgba(95,211,160,.075);}
+  .trow.fell{background:rgba(255,154,139,.06);}
+  .trow.rose,.trow.fell{transition:background 1.2s ease;}
   .up svg{opacity:.75;flex:none;}
 
   /* 확정선 */
@@ -155,6 +177,10 @@
 
   @media (max-width:760px){
     .thead,.trow{grid-template-columns:46px minmax(0,1fr) 100px;padding:0 14px;gap:10px;}
+    .trow{height:auto;min-height:66px;padding-top:10px;padding-bottom:10px;}
+    .cmt{font-size:11px;}
+    .updelta{margin-left:0;font-size:10.5px;}
+    .upcell{flex-direction:column;align-items:flex-end;gap:3px;}
     .thead .th.date,.trow .dt{display:none;}
     .hero{padding:20px;}
     .hero h1{font-size:25px;}
@@ -256,7 +282,7 @@
   var P=new URLSearchParams(location.search);
 
   var S={
-    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,deadline:null,
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,prev:null,deadline:null,
     groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
@@ -419,6 +445,18 @@
     }else{
       S.items.forEach(function(r,i){ r.grp=-1; r.rank=i+1; });
     }
+    // 지난번과 비교해서 얼마나 오르내렸는지 계산
+    var prev=S.prev||null;
+    S.items.forEach(function(r){
+      var p=prev?prev[r.key]:null;
+      r.isNew = !!(prev && !p);
+      r.dUp   = p ? (r.up - p.up) : 0;
+      r.dRank = p ? (p.rank - r.rank) : 0;   // 양수 = 위로 올라감
+    });
+    var snap={};
+    S.items.forEach(function(r){ snap[r.key]={up:r.up,rank:r.rank}; });
+    S.prev=snap;
+
     S.err='';S.backup=!!isBackup;
     S.lastAt=updated?new Date(updated):new Date();
     render();
@@ -449,6 +487,43 @@
           });
       })
       .then(function(){ S.busy=false; }, function(){ S.busy=false; });
+  }
+
+  /* ---------- 자리 이동 애니메이션 ---------- */
+  function markPositions(){
+    var m={};
+    var list=$('body').querySelectorAll('.trow');
+    for(var i=0;i<list.length;i++){
+      var k=list[i].getAttribute('data-key');
+      if(k)m[k]=list[i].getBoundingClientRect().top;
+    }
+    return m;
+  }
+  function slideFrom(oldPos){
+    if(!oldPos)return;
+    var list=$('body').querySelectorAll('.trow');
+    for(var i=0;i<list.length;i++){
+      var el=list[i], k=el.getAttribute('data-key');
+      if(!k || !(k in oldPos))continue;
+      var gap=oldPos[k]-el.getBoundingClientRect().top;
+      if(Math.abs(gap)<2)continue;
+      el.style.transition='none';
+      el.style.transform='translateY('+gap+'px)';
+    }
+    // 브라우저가 위 상태를 한 번 반영하게 한 뒤 원래 자리로
+    $('body').offsetHeight;
+    requestAnimationFrame(function(){
+      for(var i=0;i<list.length;i++){
+        var el=list[i];
+        if(!el.style.transform)continue;
+        el.style.transition='transform .6s cubic-bezier(.22,.61,.36,1)';
+        el.style.transform='';
+      }
+    });
+    // 강조색은 잠깐만
+    setTimeout(function(){
+      for(var i=0;i<list.length;i++)list[i].classList.remove('rose','fell');
+    },1600);
   }
 
   /* ---------- 그리기 ---------- */
@@ -488,6 +563,7 @@
 
   function render(){
     var body=$('body');
+    var oldPos=markPositions();
     if(S.err){ body.innerHTML='';
       var e=document.createElement('div');e.className='msg err';e.textContent=S.err;body.appendChild(e);
       $('stat').textContent='';$('tabs').style.display='none';return; }
@@ -513,21 +589,40 @@
         cutDrawn=true;
       }
       var el=document.createElement('div');
-      el.className='trow'+(r.rank===1?' r1':r.rank===2?' r2':r.rank===3?' r3':'');
+      var moved = r.dRank>0 ? ' rose' : r.dRank<0 ? ' fell' : '';
+      el.className='trow'+(r.rank===1?' r1':r.rank===2?' r2':r.rank===3?' r3':'')+moved;
+      el.dataset.key=r.key;
       el.innerHTML=
-        '<div class="rank">'+r.rank+'</div>'+
-        '<div class="who"><div class="ava"><span class="ini"></span></div><div class="nm"></div></div>'+
+        '<div class="rankcell"><div class="rank">'+r.rank+'</div><div class="mv"></div></div>'+
+        '<div class="who"><div class="ava"><span class="ini"></span></div>'+
+          '<div class="nmwrap"><div class="nm"></div><div class="cmt"></div></div></div>'+
         '<div class="dt"></div>'+
         '<div class="upcell"><a class="up" target="_blank" rel="noopener">'+
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
           '<path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/>'+
           '<path d="M7 11l4.2-7.4a1.6 1.6 0 0 1 3 .8V9h4.3a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17 20H7z"/></svg>'+
-          '<span class="v"></span></a></div>';
+          '<span class="v"></span></a><span class="updelta"></span></div>';
       el.querySelector('.ini').textContent=r.nick.slice(0,1);
       el.querySelector('.nm').textContent=r.nick;
       el.querySelector('.dt').textContent=r.date;
       el.querySelector('.v').textContent=r.up.toLocaleString('ko-KR');
       el.querySelector('.up').href=postLink();
+
+      // 댓글 한 줄
+      var one=String(r.txt||'').replace(/\s+/g,' ').trim();
+      el.querySelector('.cmt').textContent=one;
+      if(one)el.querySelector('.cmt').title=one;
+
+      // 순위 이동 화살표
+      var mv=el.querySelector('.mv');
+      if(r.isNew){ mv.className='mv newm'; mv.textContent='NEW'; }
+      else if(r.dRank>0){ mv.className='mv upm'; mv.textContent='\u25B2'+r.dRank; }
+      else if(r.dRank<0){ mv.className='mv dnm'; mv.textContent='\u25BC'+(-r.dRank); }
+
+      // UP 증감
+      var du=el.querySelector('.updelta');
+      if(r.dUp>0){ du.className='updelta plus'; du.textContent='+'+r.dUp.toLocaleString('ko-KR'); }
+      else if(r.dUp<0){ du.className='updelta minus'; du.textContent=r.dUp.toLocaleString('ko-KR'); }
       if(r.img){
         var im=document.createElement('img');
         im.loading='lazy';im.alt='';im.src=r.img;
@@ -536,6 +631,8 @@
       }
       body.appendChild(el);
     });
+
+    slideFrom(oldPos);
 
     var head='지원자 '+S.items.length+'명';
     if(S.groups.length){

@@ -1330,7 +1330,7 @@
       return { post:$('postUrl').value, relay:$('relay').value.trim(),
                cut:$('cut').value, cutOn:$('cutOn').checked?'1':'0',
                interval:$('itv').value, title:$('ttl').value,
-               groups:readGroups(),
+               groups:readGroups(), cap:$('capOn').checked?'1':'0',
                deadline:$('dl').value||'' };
     };
     $('apply').addEventListener('click',function(){ applyParams(read()); });
@@ -1361,26 +1361,32 @@
       conf.i = v.interval;
       if(v.title&&v.title!=='지원자 UP 순위')conf.t=v.title;
       if(v.groups)conf.g=v.groups;
-      if($('capOn')&&$('capOn').checked)conf.x='1';
       if(v.deadline)conf.d=v.deadline;
       if(v.relay&&v.relay!==RELAY)conf.r=v.relay;
 
       var line='  "'+name+'": '+JSON.stringify(conf);
-      var url=location.origin+location.pathname+'?s='+name;
+      var base=location.origin+location.pathname+'?s='+name;
+      var capOn=$('capOn').checked;
+
       $('out').innerHTML='';
-      var a=document.createElement('div');
-      a.textContent='① 저장소의 presets.json 에 아래 줄을 넣고 저장하세요:';
-      var b=document.createElement('div');
-      b.style.cssText='margin:6px 0 12px;color:var(--text);user-select:all;';
-      b.textContent=line+',';
-      var c2=document.createElement('div');
-      c2.textContent='② 그러면 이 주소로 열립니다 (복사 버튼은 이 주소를 복사합니다):';
-      var d=document.createElement('div');
-      d.style.cssText='margin-top:6px;color:var(--cut);';
-      d.textContent=url;
-      $('out').appendChild(a);$('out').appendChild(b);
-      $('out').appendChild(c2);$('out').appendChild(d);
-      $('out').dataset.url=url;
+      var add=function(txt,style){
+        var e=document.createElement('div');
+        if(style)e.style.cssText=style;
+        e.textContent=txt;
+        $('out').appendChild(e);
+        return e;
+      };
+      add('① 저장소의 presets.json 에 아래 줄을 넣고 저장하세요:');
+      add(line+',','margin:6px 0 14px;color:var(--text);user-select:all;');
+      add('② 모두에게 주는 주소 (시청자·스트리머 공용):');
+      add(base,'margin:6px 0 12px;color:var(--cut);user-select:all;');
+      if(capOn){
+        add('③ 스크린샷 권한까지 주는 주소 (특정 스트리머에게만):');
+        add(base+'&x=1','margin:6px 0 4px;color:var(--gold);user-select:all;');
+        add('※ 설정은 하나만 만들면 됩니다. 뒤에 &x=1 만 붙이면 스크린샷 버튼이 생깁니다.',
+            'margin-top:8px;color:var(--dim);');
+      }
+      $('out').dataset.url = capOn ? (base+'&x=1') : base;
     });
 
     $('copy').addEventListener('click',function(){

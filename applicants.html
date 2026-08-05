@@ -641,6 +641,7 @@
     S.prev=snap;
 
     S.err='';S.stale='';S.backup=!!isBackup;
+    if(S.cap)warmPics();
     S.lastAt=updated?new Date(updated):new Date();
     render();
   }
@@ -874,15 +875,38 @@
   var CAP_PER = 20;
   var F = "'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif";
 
+  var PIC={};            // 한 번 받은 사진은 기억해둡니다 (두 번째부터는 즉시)
   function loadPic(url){
+    if(PIC[url]!==undefined)return Promise.resolve(PIC[url]);
     return new Promise(function(res){
-      if(!url)return res(null);
+      if(!url){ PIC[url]=null; return res(null); }
+      var done=false;
+      var finish=function(v){ if(done)return; done=true; PIC[url]=v; res(v); };
       var im=new Image();
       im.crossOrigin='anonymous';
       im.referrerPolicy='no-referrer';
-      im.onload=function(){res(im);};
-      im.onerror=function(){res(null);};
+      im.onload=function(){ finish(im); };
+      im.onerror=function(){ finish(null); };
+      setTimeout(function(){ finish(null); },3000);   // 느린 사진은 기다리지 않습니다
       im.src=S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(url) : url;
+    });
+  }
+  // 여러 장을 동시에, 다만 한꺼번에 너무 많이는 아니게
+  function loadPics(urls,onStep){
+    var out={}, i=0, done=0, LANES=14;
+    return new Promise(function(res){
+      if(!urls.length)return res(out);
+      var next=function(){
+        if(i>=urls.length)return;
+        var k=urls[i++];
+        loadPic(k.url).then(function(im){
+          if(im)out[k.key]=im;
+          done++;
+          if(onStep)onStep(done,urls.length);
+          if(done===urls.length)res(out); else next();
+        });
+      };
+      for(var n=0;n<Math.min(LANES,urls.length);n++)next();
     });
   }
   function capNote(t,on){ var e=$('capNote'); e.textContent=t; e.className='capnote'+(on?' on':''); }
@@ -1015,7 +1039,7 @@
         var u=URL.createObjectURL(b);
         var a=document.createElement('a');
         a.href=u; a.download=name; document.body.appendChild(a); a.click();
-        setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); res(); },400);
+        setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); res(); },120);
       },'image/png');
     });
   }
@@ -1030,6 +1054,16 @@
   function upto(rows){
     var lim=S.cut>0?S.cut:Infinity;
     return rows.filter(function(r){ return r.rank<=lim; });
+  }
+
+  var warmed=false;
+  function warmPics(){
+    if(warmed||!S.items.length)return;
+    warmed=true;
+    var lim=S.cut>0?S.cut:40;
+    var urls=[];
+    S.items.forEach(function(r){ if(r.img&&r.rank<=lim&&PIC[r.img]===undefined)urls.push({key:r.key,url:r.img}); });
+    if(urls.length)loadPics(urls);   // 버튼 누르기 전에 미리 받아둡니다
   }
 
   function shoot(){
@@ -1072,11 +1106,9 @@
     $('capBtn').disabled=true;
     capNote('사진 '+plan.length+'장을 준비하고 있습니다…',true);
 
-    var keys=Object.keys(need);
-    Promise.all(keys.map(function(k){ return loadPic(need[k]).then(function(im){ return [k,im]; }); }))
-      .then(function(pairs){
-        var pics={};
-        pairs.forEach(function(pr){ if(pr[1])pics[pr[0]]=pr[1]; });
+    var urls=Object.keys(need).map(function(k){ return {key:k,url:need[k]}; });
+    loadPics(urls,function(a,b){ capNote('프로필 사진 '+a+' / '+b+' …',true); })
+      .then(function(pics){
         var seq=Promise.resolve();
         plan.forEach(function(sh,i){
           seq=seq.then(function(){

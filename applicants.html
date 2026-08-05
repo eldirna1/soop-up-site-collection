@@ -875,16 +875,12 @@
   function putImg(box,r){
     if(!r.img)return;
     var im=document.createElement('img');
-    im.loading='lazy'; im.alt='';
-    if(needForShot(r)){
-      im.crossOrigin='anonymous';          // 이렇게 받아야 그림에 넣을 수 있습니다
-      im.referrerPolicy='no-referrer';
-      im.src=picSrc(r.img);
+    im.loading='lazy'; im.alt=''; im.referrerPolicy='no-referrer';
+    if(needForShot(r) && DIRECT!==false){
+      im.crossOrigin='anonymous';        // 이렇게 받아야 그림에도 쓸 수 있습니다
       im.onload=function(){ PIC[r.img]=im; };
-    }else{
-      im.referrerPolicy='no-referrer';
-      im.src=r.img;
     }
+    im.src=r.img;
     im.onerror=function(){ if(im.parentNode)im.parentNode.removeChild(im); };
     box.appendChild(im);
   }
@@ -896,23 +892,43 @@
   var F = "'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif";
 
   var PIC={};            // 한 번 받은 사진은 기억해둡니다 (두 번째부터는 즉시)
-  function loadPic(url,waitMs){
-    if(PIC[url])return Promise.resolve(PIC[url]);
+  var DIRECT=null;       // null=아직 모름, true=중계기 없이 가능, false=중계기 필요
+
+  function tryImage(src,waitMs){
     return new Promise(function(res){
-      if(!url)return res(null);
       var done=false;
-      var finish=function(v){
-        if(done)return; done=true;
-        if(v)PIC[url]=v;          // 실패는 기억하지 않습니다 (다시 시도할 수 있게)
-        res(v);
-      };
+      var fin=function(v){ if(!done){done=true;res(v);} };
       var im=new Image();
       im.crossOrigin='anonymous';
       im.referrerPolicy='no-referrer';
-      im.onload=function(){ finish(im); };
-      im.onerror=function(){ finish(null); };
-      setTimeout(function(){ finish(null); }, waitMs||15000);
-      im.src=S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(url) : url;
+      im.onload=function(){ fin(im); };
+      im.onerror=function(){ fin(null); };
+      setTimeout(function(){ fin(null); }, waitMs||8000);
+      im.src=src;
+    });
+  }
+  // SOOP 사진 서버가 중계기 없이도 되는지 한 번만 확인합니다.
+  // 된다면 훨씬 빠릅니다 (중계기를 거치지 않으니까요).
+  function probeDirect(sample){
+    if(DIRECT!==null||!sample)return Promise.resolve(DIRECT);
+    return tryImage(sample,6000).then(function(im){
+      DIRECT=!!im;
+      if(im)PIC[sample]=im;
+      return DIRECT;
+    });
+  }
+  function loadPic(url,waitMs){
+    if(PIC[url])return Promise.resolve(PIC[url]);
+    if(!url)return Promise.resolve(null);
+    var relayed=S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(url) : url;
+    var first = DIRECT===false ? relayed : url;
+    return tryImage(first,waitMs||12000).then(function(im){
+      if(im){ PIC[url]=im; return im; }
+      if(first===relayed)return null;
+      return tryImage(relayed,waitMs||15000).then(function(im2){
+        if(im2)PIC[url]=im2;
+        return im2;
+      });
     });
   }
   // 동시에 너무 많이 부르면 중계기가 밀립니다. 조금씩, 대신 실패하면 다시 시도합니다.
@@ -1037,7 +1053,7 @@
 
   /* 전체 — 부문 세 칸을 나란히 */
   function sheetAll(cols,from,to,pics,title,sub,idx,total){
-    var sc=2, n=cols.length, COLW=430, GAP=14, PAD=20;
+    var sc=1.7, n=cols.length, COLW=430, GAP=14, PAD=20;
     var W=PAD*2+COLW*n+GAP*(n-1);
     var ROW=60, HEAD=104, COLHEAD=40, FOOT=48;
     var maxRows=0;
@@ -1107,7 +1123,9 @@
     var left=missingPics();
     if(!left.length)return;
     warming=true;
-    loadPicsTwice(left).then(function(){ warming=false; });
+    probeDirect(left[0].url).then(function(){
+      return loadPicsTwice(missingPics());
+    }).then(function(){ warming=false; });
   }
 
   function shoot(){

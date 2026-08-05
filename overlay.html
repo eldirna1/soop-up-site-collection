@@ -175,7 +175,7 @@
   function load(){
     if(!S.id||S.busy)return;
     S.busy=true;
-    var to=setTimeout(function(){ if(S.busy){S.busy=false;} },15000);
+    var to=setTimeout(function(){ if(S.busy){S.busy=false;} },35000);
     fetch(listUrl(),{cache:'no-store',credentials:'omit',headers:{'Accept':'application/json'}})
       .then(function(r){ if(!r.ok&&r.status!==502)throw new Error('서버 '+r.status); return r.json(); })
       .then(function(j){
@@ -205,6 +205,7 @@
       .catch(function(e){
         var m=e.message||String(e);
         if(/Failed to fetch|NetworkError|load failed/i.test(m))m='중계기에 연결하지 못했습니다.';
+        if(S.items.length)return;      // 이미 띄운 순위는 그대로 둔다
         S.err=m; draw();
       })
       .then(function(){ clearTimeout(to); S.busy=false; },function(){ clearTimeout(to); S.busy=false; });

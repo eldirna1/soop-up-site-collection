@@ -324,17 +324,20 @@
   }
   function flat(f){
     var out=[];
+    var seen=0;
     function push(r,ptxt){
       if(!r||typeof r!=='object')return;
+      if(++seen>20000)return;              // 안전장치: 무한히 도는 것 방지
       var nick=String(r[f.nk]==null?'':r[f.nk]).trim();
+      if(!nick)return;                     // 원래 동작으로 되돌림
+      var uid=f.idk?String(r[f.idk]==null?'':r[f.idk]):'';
       var txt=f.tk?String(r[f.tk]==null?'':r[f.tk]):'';
-      if(nick)
       out.push({
-        nick:nick, up:Number(r[f.uk])||0, uid:(f.idk?String(r[f.idk]==null?'':r[f.idk]):''),
+        nick:nick, up:Number(r[f.uk])||0, uid:uid,
         date:f.dk?String(r[f.dk]||''):'',
-        img:avatar(f.idk?String(r[f.idk]==null?'':r[f.idk]):'',f.imk?r[f.imk]:''),
+        img:avatar(uid,f.imk?r[f.imk]:''),
         txt:txt, ptxt:ptxt||'',
-        key:(f.idk&&r[f.idk])?String(r[f.idk]):('n:'+nick)
+        key:uid||('n:'+nick)
       });
       for(var k in r){var v=r[k];
         if(Array.isArray(v)&&v.length&&typeof v[0]==='object'&&v[0]&&(f.nk in v[0]))
@@ -397,11 +400,13 @@
     var got=[],page=1,lastSig='';
     function step(){
       if(page>40)return done();
+      if(!S.items.length)
+        $('body').innerHTML='<div class="msg">불러오는 중입니다… ('+page+'쪽째)</div>';
       var stop=false, killer=setTimeout(function(){
         stop=true;
-        S.err='서버가 20초 동안 응답하지 않았습니다.\n게시글 주소가 맞는지, 글이 공개되어 있는지 확인해주세요.';
+        S.err='서버가 12초 동안 응답하지 않았습니다. ('+page+'쪽에서 멈춤)\n\n확인용 주소: '+apiUrl(page);
         render();
-      },20000);
+      },12000);
       fetch(apiUrl(page),{credentials:'omit',headers:{'Accept':'application/json, text/plain, */*'}})
         .then(function(r){ clearTimeout(killer); if(stop)throw new Error('__stop__');
           if(!r.ok)throw new Error('서버가 '+r.status+' 로 응답했습니다.'); return r.json(); })

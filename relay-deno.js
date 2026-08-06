@@ -1,8 +1,6 @@
-// SOOP 순위 사이트 — 클라우드플레어 워커
+// SOOP 댓글 중계기 — Deno Deploy 플레이그라운드에 통째로 붙여넣으세요.
 //
-//  /list?id=..&no=..  →  댓글을 모아 순위 자료로 돌려줍니다
-//  /img?u=..          →  프로필 사진을 대신 받아옵니다
-//  그 외 모든 주소     →  저장소에 올린 html 파일을 그대로 보여줍니다
+// 쓰는 법:  https://<내주소>.deno.dev/list?id=ecvhao&no=203249055
 //
 // 여러 쪽으로 나뉜 댓글을 이 안에서 전부 모아 정리된 목록 하나로 돌려줍니다.
 // 그래서 보는 쪽은 갱신 한 번에 요청 한 번만 씁니다.
@@ -24,8 +22,10 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Accept, Content-Type',
 };
 
-const imgCache = new Map();                 // 프로필 사진 보관
-const IMG_CACHE_MS = 6 * 60 * 60 * 1000;    // 6시간
+const CACHE_MS = 8000;   // 결과 재사용 시간
+const cache = new Map();
+const imgCache = new Map();          // 프로필 사진 보관
+const IMG_CACHE_MS = 6 * 60 * 60 * 1000;   // 6시간
 
 /* ---------- 응답에서 댓글 뽑아내기 ---------- */
 
@@ -175,61 +175,21 @@ async function collectPost(id, no) {
   return [...map.values()].sort((a, b) => b.up - a.up);
 }
 
-/* ---------- 부문 나누기 (가벼운 형식용) ---------- */
-
-function norm(s) { return String(s || '').toLowerCase().replace(/\s+/g, ''); }
-function parseGroups(v) {
-  const out = [];
-  String(v || '').split('|').forEach((part) => {
-    const p = part.split('~');
-    const name = (p[0] || '').trim();
-    if (!name) return;
-    out.push({ name, keys: (p[1] || p[0]).split(',').map((x) => x.trim()).filter(Boolean) });
-  });
-  return out;
-}
-function hitAt(t, g, head) {
-  t = norm(t);
-  if (!t) return false;
-  for (const k0 of g.keys) {
-    const k = norm(k0);
-    if (!k) continue;
-    if (head ? t.indexOf(k) === 0 : t.indexOf(k) >= 0) return true;
-  }
-  return false;
-}
-function classify(r, G) {
-  if (!G.length) return -1;
-  for (let i = 0; i < G.length; i++) if (hitAt(r.ptxt, G[i], true)) return i;
-  for (let i = 0; i < G.length; i++) if (hitAt(r.txt, G[i], true)) return i;
-  for (let i = 0; i < G.length; i++) if (hitAt(r.ptxt, G[i], false)) return i;
-  for (let i = 0; i < G.length; i++) if (hitAt(r.txt, G[i], false)) return i;
-  return -1;
-}
-// 사진 주소는 아이디에서 만들 수 있으니, 예상과 같으면 빼고 보냅니다
-function guessed(uid) {
-  if (!uid) return '';
-  return 'https://profile.img.sooplive.com/LOGO/' +
-         uid.slice(0, 2).toLowerCase() + '/' + uid + '/' + uid + '.jpg';
-}
-
 /* ---------- 서버 ---------- */
 
 function reply(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8',
-              'Cache-Control': 'public, max-age=8, s-maxage=8' },
+    headers: { ...CORS, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
   });
 }
 
-export default {
-  async fetch(req, env, ctx) {
-    if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
-    const url = new URL(req.url);
+  const url = new URL(req.url);
 
-    // 프로필 사진 통로 — 이미지 복사 기능에 필요합니다 (특정 스트리머에게만 쓰임)
+  // 프로필 사진 통로 — 스크린샷에 사진이 들어가려면 이쪽을 거쳐야 합니다
   if (url.pathname === '/img') {
     const t0 = url.searchParams.get('u') || '';
     let ti;
@@ -240,9 +200,12 @@ export default {
     const key = ti.toString();
     const hit = imgCache.get(key);
     if (hit && Date.now() - hit.at < IMG_CACHE_MS) {
-      return new Response(hit.buf, { status: 200,
-        headers: { ...CORS, 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=86400' } });
+      return new Response(hit.buf, {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=86400' },
+      });
     }
+
     try {
       const r = await fetch(key, {
         headers: { 'Referer': 'https://www.sooplive.com/', 'User-Agent': HEADERS['User-Agent'] },
@@ -252,69 +215,47 @@ export default {
       const buf = await r.arrayBuffer();
       const type = r.headers.get('Content-Type') || 'image/jpeg';
       imgCache.set(key, { at: Date.now(), buf, type });
-      if (imgCache.size > 600) for (const k of [...imgCache.keys()].slice(0, 200)) imgCache.delete(k);
-      return new Response(buf, { status: 200,
-        headers: { ...CORS, 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' } });
+      if (imgCache.size > 600) {
+        // 오래된 것부터 정리
+        const keys = [...imgCache.keys()].slice(0, 200);
+        for (const k of keys) imgCache.delete(k);
+      }
+      return new Response(buf, {
+        status: 200,
+        headers: { ...CORS, 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' },
+      });
     } catch (e) {
       return new Response('사진 가져오기 실패', { status: 502, headers: CORS });
     }
   }
 
-  // /list 가 아니면 저장소에 올린 파일을 보여줍니다
   if (url.pathname !== '/list') {
-    if (env && env.ASSETS) return env.ASSETS.fetch(req);
-    return new Response('파일이 연결되어 있지 않습니다.', { status: 404, headers: CORS });
+    return new Response(
+      'SOOP 댓글 중계기가 켜져 있습니다.\n\n' +
+      '중계 주소 칸에 넣을 값:\n' + url.origin + '/list\n\n' +
+      '직접 확인해보려면:\n' + url.origin + '/list?id=ecvhao&no=203249055\n\n' +
+      '프로필 사진 통로도 켜져 있습니다: ' + url.origin + '/img?u=<사진주소>',
+      { status: 200, headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' } },
+    );
   }
 
   const id = (url.searchParams.get('id') || '').toLowerCase();
-    const no = url.searchParams.get('no') || '';
-    if (!/^[a-z0-9_-]{2,30}$/.test(id) || !/^\d{1,20}$/.test(no)) {
-      return reply({ error: 'id 와 no 를 확인해주세요.' }, 400);
-    }
+  const no = url.searchParams.get('no') || '';
+  if (!/^[a-z0-9_-]{2,30}$/.test(id) || !/^\d{1,20}$/.test(no)) {
+    return reply({ error: 'id 와 no 를 확인해주세요.' }, 400);
+  }
 
-    const slim = url.searchParams.get('slim') === '1';
-    const gRaw = url.searchParams.get('g') || '';
-    const G = parseGroups(gRaw);
+  const cacheKey = id + '/' + no;
+  const hit = cache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_MS) return reply({ ...hit.body, cached: true });
 
-    // 전 세계 어느 데이터센터에서든 같은 자료를 나눠 쓰도록,
-    // 시간값(t)을 뺀 깨끗한 열쇠로 클라우드플레어 캐시를 씁니다.
-    const edge = caches.default;
-    const keyUrl = url.origin + '/list?id=' + encodeURIComponent(id) +
-                   '&no=' + encodeURIComponent(no) +
-                   (slim ? '&slim=1' : '') +
-                   (gRaw ? '&g=' + encodeURIComponent(gRaw) : '');
-    const cacheKey = new Request(keyUrl, { method: 'GET' });
-
-    const cached = await edge.match(cacheKey);
-    if (cached) return cached;          // 이미 있으면 SOOP 에 가지 않습니다
-
-    try {
-      const items = await collectPost(id, no);
-      let body;
-      if (slim) {
-        // 한 사람당 배열 하나로 — 이름표를 빼서 크기를 크게 줄입니다
-        // [닉네임, 아이디, UP, 등록일, 부문번호, 댓글일부, 사진주소(예상과 다를 때만)]
-        const d = items.map((r) => {
-          const row = [
-            r.nick, r.uid, r.up, r.date,
-            classify(r, G),
-            String(r.txt || '').replace(/\s+/g, ' ').slice(0, 45),
-          ];
-          if (r.img && r.img !== guessed(r.uid)) row.push(r.img);
-          return row;
-        });
-        body = { id, no, updated: new Date().toISOString(), count: d.length, slim: 1, d };
-      } else {
-        body = { id, no, updated: new Date().toISOString(), count: items.length, items };
-      }
-      const res = reply(body);
-      // 뒤에서 조용히 저장해두면, 다음 사람부터는 SOOP 에 안 갑니다
-      if (ctx && ctx.waitUntil) ctx.waitUntil(edge.put(cacheKey, res.clone()));
-      else await edge.put(cacheKey, res.clone());
-      return res;
-    } catch (e) {
-      return reply({ error: e instanceof Error ? e.message : String(e) }, 502);
-    }
-
-  },
-};
+  try {
+    const items = await collectPost(id, no);
+    const body = { id, no, updated: new Date().toISOString(), count: items.length, items };
+    cache.set(cacheKey, { at: Date.now(), body });
+    if (cache.size > 200) cache.clear();
+    return reply(body);
+  } catch (e) {
+    return reply({ error: e instanceof Error ? e.message : String(e) }, 502);
+  }
+});

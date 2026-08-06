@@ -1,3 +1,17 @@
+      var base=location.origin+location.pathname+'?s='+name;
+
+      $('out').innerHTML='';
+      var add=function(txt,style){
+        var e=document.createElement('div');
+        if(style)e.style.cssText=style;
+        e.textContent=txt;
+        $('out').appendChild(e);
+        return e;
+      };
+      add('① 저장소의 presets.json 에 아래 줄을 넣고 저장하세요:');
+      add(line+',','margin:6px 0 14px;color:var(--text);user-select:all;');
+      add('② 그러면 이 주소로 열립니다:');
+      add(base,'margin:6px 0 4px;color:var(--cut);user-select:all;');
 <!doctype html>
 <html lang="ko">
 <head>
@@ -257,19 +271,6 @@
   .ava.click:hover{border-color:var(--cut);}
   .up{cursor:pointer;}
 
-  /* 스크린샷 */
-  .capbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px 0;}
-  .capbar button{font:inherit;font-size:13px;font-weight:800;color:#0A0D16;background:var(--gold);
-    border:0;border-radius:10px;padding:10px 18px;cursor:pointer;transition:opacity .13s ease;}
-  .capbar #capCopy{color:var(--text);background:var(--pill);border:1px solid var(--edge);}
-  .capbar #capCopy:hover{background:var(--pill-hi);opacity:1;}
-  .capbar button:hover{opacity:.85;}
-  .capbar button:disabled{opacity:.5;cursor:default;}
-  .capnote{font-size:11.5px;color:var(--dim);line-height:1.6;}
-  .capmode{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
-    font-size:11.5px;font-weight:700;color:var(--dim);}
-  .capmode input{width:14px;height:14px;accent-color:var(--gold);margin:0;cursor:pointer;}
-
   /* 부문 탭 */
   .tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 18px 0;}
   .tabs button{
@@ -292,7 +293,6 @@
     background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:8px 11px;}
   .sw input{width:15px;height:15px;accent-color:var(--cut);cursor:pointer;margin:0;}
   .sw.on{color:var(--text);border-color:var(--cut);}
-  #capBox span{font-weight:700;}
   .memo{background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.28);
     border-radius:11px;padding:14px 16px;margin-bottom:11px;
     font-size:11.5px;color:var(--muted);line-height:1.85;}
@@ -364,20 +364,6 @@
       <label>짧은 이름 (선택) — 넣으면 아주 짧은 주소를 만들 수 있습니다</label>
       <input id="slug" placeholder="영문 소문자로, 예: up2026">
     </div>
-    <div class="f">
-      <label class="sw" id="capBox" style="align-self:flex-start">
-        <input type="checkbox" id="capOn"><span>스크린샷 버튼 넣기 (스트리머 전용 링크)</span>
-      </label>
-      <span class="ghint">체크하면 만들어지는 주소 뒤에 <b>&amp;x=1</b> 이 붙습니다.</span>
-    </div>
-    <div class="memo">
-      <b>기억해두실 것 — 스크린샷 버튼은 주소로 켜집니다</b>
-      만들어둔 주소 뒤에 <code>&amp;x=1</code> 만 붙이면 스크린샷 버튼이 있는 페이지가 됩니다.
-      위 체크박스는 그걸 대신 붙여주는 것뿐이라, 나중에 직접 붙이셔도 똑같습니다.
-      <span class="ex">…/applicants.html?s=up2026 &nbsp;→&nbsp; 모두에게 주는 주소<br>
-      …/applicants.html?s=up2026<b>&amp;x=1</b> &nbsp;→&nbsp; 스크린샷 버튼이 보이는 주소</span>
-      주소에 <code>?</code> 가 이미 있으면 <code>&amp;x=1</code>, 없으면 <code>?x=1</code> 입니다.
-    </div>
     <div class="btns">
       <button id="apply">미리보기</button>
       <button id="make">공유 주소 만들기</button>
@@ -411,11 +397,6 @@
 
   <div class="table">
     <div class="tabs" id="tabs" style="display:none"></div>
-    <div class="capbar" id="capbar" style="display:none">
-      <button id="capBtn">스크린샷 찍기</button>
-      <button id="capCopy">이미지 복사</button>
-      <span class="capnote" id="capNote">찍기는 20위씩 나눠 저장, 복사는 전체를 한 장으로 복사합니다.</span>
-    </div>
     <div class="thead" id="thead">
       <div class="th c">순위</div>
       <div class="namecol">
@@ -464,7 +445,7 @@
   /* ================================================= */
 
   var S={
-    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,cap:false,deadline:null,
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,deadline:null,
     groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
@@ -590,7 +571,25 @@
   function relayUrl(){
     var b=S.relay.replace(/\/+$/,'');
     if(!/\/list$/.test(b))b+='/list';
-    return b+'?id='+encodeURIComponent(S.id.toLowerCase())+'&no='+encodeURIComponent(S.no)+'&t='+Date.now();
+    var q='?id='+encodeURIComponent(S.id.toLowerCase())+'&no='+encodeURIComponent(S.no)+'&slim=1';
+    if(S.groups.length)q+='&g='+encodeURIComponent(groupsToParam());
+    // 10초 단위로 주소를 고정해서, 중간 서버가 같은 자료를 여러 명에게 나눠줄 수 있게 합니다
+    q+='&t='+Math.floor(Date.now()/10000);
+    return b+q;
+  }
+  function guessImg(uid){
+    if(!uid)return '';
+    return 'https://profile.img.sooplive.com/LOGO/'+uid.slice(0,2).toLowerCase()+'/'+uid+'/'+uid+'.jpg';
+  }
+  // 가벼운 형식([닉네임, 아이디, UP, 날짜, 부문, 댓글, 사진])을 원래 모양으로 펼칩니다
+  function expand(j){
+    if(!j||!j.slim)return (j&&j.items)||[];
+    return (j.d||[]).map(function(a){
+      var uid=a[1]||'';
+      return { nick:a[0], uid:uid, up:Number(a[2])||0, date:a[3]||'',
+               preGrp:(a[4]==null?-1:Number(a[4])), txt:a[5]||'', ptxt:'',
+               img:a[6]||guessImg(uid), key:uid||('n:'+a[0]) };
+    });
   }
   function backupUrl(){
     return 'data/'+encodeURIComponent(S.id.toLowerCase())+'-'+encodeURIComponent(S.no)+'.json?t='+Date.now();
@@ -620,7 +619,7 @@
     if(S.groups.length){
       var n={};
       S.items.forEach(function(r){
-        r.grp=classify(r);
+        r.grp=(r.preGrp!=null)?r.preGrp:classify(r);   // 중계기가 나눠줬으면 그대로 씁니다
         n[r.grp]=(n[r.grp]||0)+1;
         r.rank=n[r.grp];                 // 부문 안에서의 순위
       });
@@ -646,7 +645,6 @@
     S.prev=snap;
 
     S.err='';S.stale='';S.backup=!!isBackup;
-    if(S.cap)warmPics();
     S.lastAt=updated?new Date(updated):new Date();
     render();
   }
@@ -661,7 +659,7 @@
       ? getJson(relayUrl(),30000)
       : Promise.reject(new Error('중계 주소가 비어 있습니다.'));
 
-    live.then(function(j){ apply(j.items,j.updated,false); })
+    live.then(function(j){ apply(expand(j),j.updated,false); })
       .catch(function(e){
         var why=e.message||String(e);
         if(S.items.length){
@@ -868,15 +866,7 @@
     if(e.target.closest('.up')||e.target.closest('.cup')) openSheet(r);
   });
 
-  /* ---------- 사진 한 번만 받기 ---------- */
-  // 스크린샷 권한이 있는 화면에서는, 목록에 사진을 띄우는 그 순간
-  // 스크린샷에도 쓸 수 있는 형태로 받아둡니다. 나중에 또 받지 않습니다.
-  function needForShot(r){
-    return S.cap && r.img && (S.cut>0 ? r.rank<=S.cut : r.rank<=40);
-  }
-  function picSrc(url){
-    return S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(url) : url;
-  }
+  /* ---------- 사진 ---------- */
   function putImg(box,r){
     if(!r.img)return;
     var im=document.createElement('img');
@@ -885,378 +875,6 @@
     im.onerror=function(){ if(im.parentNode)im.parentNode.removeChild(im); };
     box.appendChild(im);
   }
-
-  /* ---------- 스크린샷 ---------- */
-  // 화면을 베끼지 않고 그림판에 새로 그립니다.
-  // 지금 보고 있는 탭만, 확정 인원까지, 20위씩 나눠 저장합니다.
-  var CAP_PER = 20;
-  var F = "'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif";
-
-  var PIC={};            // 한 번 받은 사진은 기억해둡니다 (두 번째부터는 즉시)
-  var DIRECT=null;       // null=아직 모름, true=중계기 없이 가능, false=중계기 필요
-
-  function tryImage(src,waitMs){
-    return new Promise(function(res){
-      var done=false;
-      var fin=function(v){ if(!done){done=true;res(v);} };
-      var im=new Image();
-      im.crossOrigin='anonymous';
-      im.referrerPolicy='no-referrer';
-      im.onload=function(){ fin(im); };
-      im.onerror=function(){ fin(null); };
-      setTimeout(function(){ fin(null); }, waitMs||8000);
-      im.src=src;
-    });
-  }
-  // SOOP 사진 서버가 중계기 없이도 되는지 한 번만 확인합니다.
-  // 된다면 훨씬 빠릅니다 (중계기를 거치지 않으니까요).
-  function probeDirect(sample){
-    if(DIRECT!==null||!sample)return Promise.resolve(DIRECT);
-    return tryImage(sample,6000).then(function(im){
-      DIRECT=!!im;
-      if(im)PIC[sample]=im;
-      return DIRECT;
-    });
-  }
-  function loadPic(url,waitMs){
-    if(PIC[url])return Promise.resolve(PIC[url]);
-    if(!url)return Promise.resolve(null);
-    var relayed=S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(url) : url;
-    var first = DIRECT===false ? relayed : url;
-    return tryImage(first,waitMs||12000).then(function(im){
-      if(im){ PIC[url]=im; return im; }
-      if(first===relayed)return null;
-      return tryImage(relayed,waitMs||15000).then(function(im2){
-        if(im2)PIC[url]=im2;
-        return im2;
-      });
-    });
-  }
-  // 동시에 너무 많이 부르면 중계기가 밀립니다. 조금씩, 대신 실패하면 다시 시도합니다.
-  function loadPics(urls,onStep,lanes,waitMs){
-    var LANES=lanes||6;
-    return new Promise(function(res){
-      var out={}, i=0, done=0;
-      if(!urls.length)return res(out);
-      var next=function(){
-        if(i>=urls.length)return;
-        var k=urls[i++];
-        loadPic(k.url,waitMs).then(function(im){
-          if(im)out[k.key]=im;
-          done++;
-          if(onStep)onStep(done,urls.length);
-          if(done===urls.length)res(out); else next();
-        });
-      };
-      for(var n=0;n<Math.min(LANES,urls.length);n++)next();
-    });
-  }
-  // 못 받은 것만 한 번 더
-  function loadPicsTwice(urls,onStep){
-    return loadPics(urls,function(a,b){ onStep&&onStep(a,b,1); },6,15000)
-      .then(function(got){
-        var again=urls.filter(function(k){ return !got[k.key]; });
-        if(!again.length)return got;
-        return loadPics(again,function(a,b){ onStep&&onStep(a,b,2); },3,20000)
-          .then(function(more){
-            for(var k in more)got[k]=more[k];
-            return got;
-          });
-      });
-  }
-  function capNote(t,on){ var e=$('capNote'); e.textContent=t; e.className='capnote'+(on?' on':''); }
-  function roundRect(x,c,y,w,h,r){
-    x.beginPath();
-    x.moveTo(c+r,y); x.lineTo(c+w-r,y); x.quadraticCurveTo(c+w,y,c+w,y+r);
-    x.lineTo(c+w,y+h-r); x.quadraticCurveTo(c+w,y+h,c+w-r,y+h);
-    x.lineTo(c+r,y+h); x.quadraticCurveTo(c,y+h,c,y+h-r);
-    x.lineTo(c,y+r); x.quadraticCurveTo(c,y,c+r,y); x.closePath();
-  }
-  function fitText(x,t,max){
-    var s2=String(t);
-    while(x.measureText(s2).width>max && s2.length>1) s2=s2.slice(0,-1);
-    return s2===String(t) ? s2 : s2+'…';
-  }
-  function drawHead(x,W,title,sub,idx,total){
-    x.fillStyle='#141A2B'; roundRect(x,20,16,W-40,72,16); x.fill();
-    x.fillStyle='#F2F4F9'; x.font='800 28px '+F; x.textAlign='left'; x.textBaseline='alphabetic';
-    x.fillText(fitText(x,title,W-320),44,54);
-    x.fillStyle='#8A93A8'; x.font='700 14px '+F;
-    x.fillText(sub,44,78);
-    x.fillStyle='#616C85'; x.font='700 14px '+F; x.textAlign='right';
-    x.fillText(idx+' / '+total,W-44,54);
-    x.textAlign='left';
-  }
-  function drawFoot(x,W,h){
-    x.fillStyle='#616C85'; x.font='700 13px '+F; x.textBaseline='middle'; x.textAlign='left';
-    x.fillText(S.lastAt?S.lastAt.toLocaleString('ko-KR')+' 기준':'',44,h-26);
-    x.textAlign='right';
-    x.fillText(location.host,W-44,h-26);
-    x.textAlign='left';
-  }
-  function drawRow(x,r,pics,left,top,w,rowH,big){
-    if(r.__hot){ x.fillStyle='rgba(255,209,102,.08)'; x.fillRect(left,top,w,rowH);
-      x.fillStyle='#FFD166'; x.fillRect(left,top,3,rowH); }
-    x.strokeStyle='rgba(255,255,255,.05)'; x.lineWidth=1;
-    x.beginPath(); x.moveTo(left,top+rowH); x.lineTo(left+w,top+rowH); x.stroke();
-
-    var mid=top+rowH/2;
-    x.fillStyle=r.rank===1?'#FFD166':r.rank===2?'#D7DEF0':r.rank===3?'#E0A177':'#F2F4F9';
-    x.font='italic 800 '+(big?21:18)+'px '+F; x.textAlign='center'; x.textBaseline='middle';
-    x.fillText(String(r.rank),left+(big?34:28),mid);
-    x.textAlign='left';
-
-    var ar=big?20:17, ax=left+(big?64:50);
-    x.save();
-    x.beginPath(); x.arc(ax+ar,mid,ar,0,Math.PI*2); x.closePath(); x.clip();
-    x.fillStyle='#212940'; x.fillRect(ax,mid-ar,ar*2,ar*2);
-    var pic=pics[r.key];
-    if(pic){ try{ x.drawImage(pic,ax,mid-ar,ar*2,ar*2); }catch(e){} }
-    else { x.fillStyle='#8A93A8'; x.font='800 '+(big?17:15)+'px '+F; x.textAlign='center';
-           x.fillText(r.nick.slice(0,1),ax+ar,mid+1); x.textAlign='left'; }
-    x.restore();
-
-    var nx=ax+ar*2+(big?16:12);
-    var upW=big?150:120;
-    x.fillStyle='#F2F4F9'; x.font='800 '+(big?18:15)+'px '+F; x.textBaseline='middle';
-    x.fillText(fitText(x,r.nick,left+w-upW-nx),nx,mid);
-
-    x.textAlign='right';
-    x.fillStyle='#F2F4F9'; x.font='800 '+(big?20:17)+'px '+F;
-    var ux=left+w-(big?54:40);
-    x.fillText(r.up.toLocaleString('ko-KR'),ux,mid);
-    x.fillStyle='#8A93A8'; x.font='700 '+(big?13:11)+'px '+F;
-    x.fillText('UP',left+w-(big?18:12),mid+1);
-    if(r.dUp){
-      x.fillStyle=r.dUp>0?'#5FD3A0':'#FF8A78'; x.font='800 12px '+F;
-      x.fillText((r.dUp>0?'+':'')+r.dUp.toLocaleString('ko-KR'),left+w-(big?18:12),mid-(big?18:16));
-    }
-    x.textAlign='left';
-  }
-
-  /* 한 부문만 — 넓게 한 줄씩 */
-  function sheetOne(rows,pics,title,sub,idx,total){
-    var sc=2, W=900, ROW=72, HEAD=104, FOOT=48;
-    var h=HEAD+rows.length*ROW+FOOT;
-    var cv=document.createElement('canvas');
-    cv.width=W*sc; cv.height=h*sc;
-    var x=cv.getContext('2d'); x.scale(sc,sc);
-    x.fillStyle='#0A0D16'; x.fillRect(0,0,W,h);
-    drawHead(x,W,title,sub,idx,total);
-    rows.forEach(function(r,i){
-      var top=HEAD+i*ROW;
-      if(i%2===0){ x.fillStyle='rgba(255,255,255,.02)'; x.fillRect(20,top,W-40,ROW); }
-      drawRow(x,r,pics,20,top,W-40,ROW,true);
-    });
-    drawFoot(x,W,h);
-    return cv;
-  }
-
-  /* 전체 — 부문 세 칸을 나란히 */
-  function sheetAll(cols,from,to,pics,title,sub,idx,total){
-    var sc=1.7, n=cols.length, COLW=430, GAP=14, PAD=20;
-    var W=PAD*2+COLW*n+GAP*(n-1);
-    var ROW=60, HEAD=104, COLHEAD=40, FOOT=48;
-    var maxRows=0;
-    cols.forEach(function(c){ maxRows=Math.max(maxRows,c.rows.slice(from,to).length); });
-    var h=HEAD+COLHEAD+maxRows*ROW+FOOT;
-    var cv=document.createElement('canvas');
-    cv.width=W*sc; cv.height=h*sc;
-    var x=cv.getContext('2d'); x.scale(sc,sc);
-    x.fillStyle='#0A0D16'; x.fillRect(0,0,W,h);
-    drawHead(x,W,title,sub,idx,total);
-
-    cols.forEach(function(c,ci){
-      var left=PAD+ci*(COLW+GAP);
-      x.fillStyle='#101725'; roundRect(x,left,HEAD,COLW,COLHEAD+maxRows*ROW,12); x.fill();
-      x.fillStyle='#F2F4F9'; x.font='800 16px '+F; x.textBaseline='middle'; x.textAlign='left';
-      x.fillText(fitText(x,c.name,COLW-90),left+16,HEAD+COLHEAD/2);
-      x.fillStyle='#616C85'; x.font='700 12px '+F; x.textAlign='right';
-      x.fillText(c.rows.length+'명',left+COLW-16,HEAD+COLHEAD/2);
-      x.textAlign='left';
-      x.strokeStyle='rgba(255,255,255,.07)'; x.lineWidth=1;
-      x.beginPath(); x.moveTo(left,HEAD+COLHEAD); x.lineTo(left+COLW,HEAD+COLHEAD); x.stroke();
-
-      c.rows.slice(from,to).forEach(function(r,i){
-        var top=HEAD+COLHEAD+i*ROW;
-        if(i%2===0){ x.fillStyle='rgba(255,255,255,.02)'; x.fillRect(left,top,COLW,ROW); }
-        drawRow(x,r,pics,left,top,COLW,ROW,false);
-      });
-    });
-    drawFoot(x,W,h);
-    return cv;
-  }
-
-  function saveCanvas(cv,name){
-    return new Promise(function(res){
-      cv.toBlob(function(b){
-        if(!b)return res();
-        var u=URL.createObjectURL(b);
-        var a=document.createElement('a');
-        a.href=u; a.download=name; document.body.appendChild(a); a.click();
-        setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); res(); },120);
-      },'image/png');
-    });
-  }
-
-  function markHot(rows){
-    var hot=hotOf(rows);
-    rows.forEach(function(r){
-      r.__hot = !!(hot&&hot.close&&Math.abs(r.up-hot.mid)<=hot.zone);
-    });
-    return rows;
-  }
-  function upto(rows){
-    var lim=S.cut>0?S.cut:Infinity;
-    return rows.filter(function(r){ return r.rank<=lim; });
-  }
-
-  function missingPics(){
-    var lim=S.cut>0?S.cut:40, out=[];
-    S.items.forEach(function(r){
-      if(r.img && r.rank<=lim && !PIC[r.img]) out.push({key:r.img,url:r.img});
-    });
-    return out;
-  }
-  var warming=false;
-  function warmPics(){
-    if(warming||!S.cap)return;
-    var left=missingPics();
-    if(!left.length)return;
-    warming=true;
-    probeDirect(left[0].url).then(function(){
-      return loadPicsTwice(missingPics());
-    }).then(function(){ warming=false; });
-  }
-
-  function shoot(){
-    var title=$('title').textContent||'지원자 UP 순위';
-    var stamp=new Date();
-    var tag=stamp.getFullYear()+('0'+(stamp.getMonth()+1)).slice(-2)+('0'+stamp.getDate()).slice(-2)+
-            '-'+('0'+stamp.getHours()).slice(-2)+('0'+stamp.getMinutes()).slice(-2);
-    var safe=function(t){ return String(t).replace(/[\\/:*?"<>|\s]/g,'_'); };
-
-    var plan=[], need={};
-    var allMode = S.groups.length && S.tab==='all';
-
-    if(allMode){
-      var cols=S.groups.map(function(g,i){
-        var rows=markHot(upto(S.items.filter(function(r){return r.grp===i;})));
-        return {name:g.name, rows:rows};
-      });
-      var maxLen=0;
-      cols.forEach(function(c){ maxLen=Math.max(maxLen,c.rows.length); });
-      if(!maxLen){ capNote('저장할 순위가 없습니다.'); return; }
-      for(var i=0;i<maxLen;i+=CAP_PER){
-        plan.push({kind:'all', cols:cols, from:i, to:Math.min(i+CAP_PER,maxLen)});
-      }
-      cols.forEach(function(c){ c.rows.forEach(function(r){ if(r.img)need[r.key]=r.img; }); });
-    }else{
-      var gi = S.groups.length ? S.tab : -1;
-      var name = S.groups.length ? (S.groups[gi]?S.groups[gi].name:'기타') : '';
-      var rows = S.groups.length
-        ? S.items.filter(function(r){return r.grp===gi;})
-        : S.items.slice();
-      rows=markHot(upto(rows));
-      if(!rows.length){ capNote('저장할 순위가 없습니다.'); return; }
-      for(var j=0;j<rows.length;j+=CAP_PER){
-        plan.push({kind:'one', name:name, rows:rows.slice(j,j+CAP_PER),
-                   from:j+1, to:Math.min(j+CAP_PER,rows.length)});
-      }
-      rows.forEach(function(r){ if(r.img)need[r.key]=r.img; });
-    }
-
-    $('capBtn').disabled=true;
-
-    var keys=Object.keys(need), pics={}, have=0;
-    keys.forEach(function(k){ if(PIC[need[k]]){ pics[k]=PIC[need[k]]; have++; } });
-
-    Promise.resolve(pics)
-      .then(function(pics){
-        capNote('사진 '+plan.length+'장을 만들고 있습니다…',true);
-        var seq=Promise.resolve();
-        plan.forEach(function(sh,i){
-          seq=seq.then(function(){
-            capNote('저장 중… '+(i+1)+' / '+plan.length,true);
-            var cv,file;
-            if(sh.kind==='all'){
-              var sub='전체 · '+(sh.from+1)+'위 ~ '+sh.to+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'');
-              cv=sheetAll(sh.cols,sh.from,sh.to,pics,title,sub,i+1,plan.length);
-              file='UP순위_전체_'+(sh.from+1)+'-'+sh.to+'_'+tag+'.png';
-            }else{
-              var sub2=(sh.name?sh.name+' · ':'')+sh.from+'위 ~ '+sh.to+'위'+
-                       (S.cut>0?' (확정 '+S.cut+'명까지)':'');
-              cv=sheetOne(sh.rows,pics,title,sub2,i+1,plan.length);
-              file='UP순위_'+safe(sh.name||'순위')+'_'+sh.from+'-'+sh.to+'_'+tag+'.png';
-            }
-            return saveCanvas(cv,file);
-          });
-        });
-        return seq;
-      })
-      .then(function(){
-        capNote('사진 '+plan.length+'장을 저장했습니다. 다운로드 폴더를 확인해주세요.',true);
-        $('capBtn').disabled=false;
-      })
-      .catch(function(e){
-        capNote('저장 중 문제가 생겼습니다: '+(e&&e.message||e));
-        $('capBtn').disabled=false;
-      });
-  }
-
-  /* ---------- 이미지 복사 (전체를 한 장으로) ---------- */
-  function oneSheet(){
-    var pics={}, title=$('title').textContent||'지원자 UP 순위';
-    var collect=function(rows){ rows.forEach(function(r){ if(r.img&&PIC[r.img])pics[r.key]=PIC[r.img]; }); };
-
-    if(S.groups.length && S.tab==='all'){
-      var cols=S.groups.map(function(g,i){
-        var rows=markHot(upto(S.items.filter(function(r){return r.grp===i;})));
-        collect(rows); return {name:g.name, rows:rows};
-      }).filter(function(c){ return c.rows.length; });
-      if(!cols.length)return null;
-      var maxLen=0; cols.forEach(function(c){ maxLen=Math.max(maxLen,c.rows.length); });
-      var sub='전체 · 1위 ~ '+maxLen+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'');
-      return {cv:sheetAll(cols,0,maxLen,pics,title,sub,1,1)};
-    }
-    var gi = S.groups.length ? S.tab : -1;
-    var name = S.groups.length ? (S.groups[gi]?S.groups[gi].name:'기타') : '';
-    var rows = markHot(upto(S.groups.length
-      ? S.items.filter(function(r){return r.grp===gi;})
-      : S.items.slice()));
-    if(!rows.length)return null;
-    collect(rows);
-    var sub2=(name?name+' · ':'')+'1위 ~ '+rows.length+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'');
-    return {cv:sheetOne(rows,pics,title,sub2,1,1), name:name};
-  }
-
-  function copyImage(){
-    var made=oneSheet();
-    if(!made){ capNote('복사할 순위가 없습니다.'); return; }
-    $('capCopy').disabled=true;
-    capNote('이미지를 만들고 있습니다…',true);
-    made.cv.toBlob(function(b){
-      if(!b){ capNote('이미지를 만들지 못했습니다.'); $('capCopy').disabled=false; return; }
-      if(!(navigator.clipboard&&window.ClipboardItem)){
-        capNote('이 브라우저는 이미지 복사를 지원하지 않습니다. 대신 저장합니다.');
-        saveCanvas(made.cv,'UP순위_전체_'+Date.now()+'.png');
-        $('capCopy').disabled=false; return;
-      }
-      navigator.clipboard.write([new ClipboardItem({'image/png':b})])
-        .then(function(){
-          capNote('복사됐습니다. 붙여넣을 곳에서 Ctrl+V 를 누르세요.',true);
-          $('capCopy').disabled=false;
-        })
-        .catch(function(e){
-          capNote('복사가 막혔습니다. 대신 저장합니다. ('+(e&&e.message||e)+')');
-          saveCanvas(made.cv,'UP순위_전체_'+Date.now()+'.png');
-          $('capCopy').disabled=false;
-        });
-    },'image/png');
-  }
-  $('capCopy').addEventListener('click',copyImage);
-
-  $('capBtn').addEventListener('click',shoot);
 
   /* ---------- 자리 이동 애니메이션 ---------- */
   function markPositions(){
@@ -1340,7 +958,6 @@
     if(!S.items.length){ body.innerHTML='<div class="msg">아직 지원자가 없습니다.</div>';return; }
 
     drawTabs();
-    $('capbar').style.display = S.cap ? '' : 'none';
 
     if(S.groups.length && S.tab==='all'){
       $('thead').classList.add('slim');
@@ -1474,7 +1091,6 @@
     var p=parsePost(src.post);
     if(p){S.id=p.id;S.no=p.no;}
     S.relay=src.relay||RELAY;
-    S.cap = String(src.cap||'')==='1';
     S.groups = parseGroups(src.groups||'');
     S.tab = S.groups.length?'all':-1;
     S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
@@ -1521,8 +1137,7 @@
         if(!c)throw new Error('"'+slug+'" 라는 이름의 설정이 presets.json 안에 없습니다.');
         applyParams({
           post:c.p, relay:c.r||RELAY, cut:c.c, cutOn:c.cutOn,
-          interval:P.get('i')||c.i, deadline:c.d, title:c.t, groups:c.g,
-          cap:(P.get('x')!=null?P.get('x'):c.x)
+          interval:P.get('i')||c.i, deadline:c.d, title:c.t, groups:c.g
         });
       })
       .catch(function(e){ S.err=e.message||String(e); render(); });
@@ -1530,7 +1145,7 @@
     applyParams({
       post:G('p','post'), relay:G('r','relay'), cut:G('c','cut'), cutOn:P.get('cutOn'),
       interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title'),
-      groups:G('g','groups'), cap:G('x','cap')
+      groups:G('g','groups')
     });
   } else {
     var syncSw=function(){
@@ -1555,7 +1170,7 @@
       return { post:$('postUrl').value, relay:$('relay').value.trim(),
                cut:$('cut').value, cutOn:$('cutOn').checked?'1':'0',
                interval:$('itv').value, title:$('ttl').value,
-               groups:readGroups(), cap:$('capOn').checked?'1':'0',
+               groups:readGroups(),
                deadline:$('dl').value||'' };
     };
     $('apply').addEventListener('click',function(){ applyParams(read()); });
@@ -1569,7 +1184,6 @@
       q.set('i',v.interval);
       if(v.title&&v.title!=='지원자 UP 순위')q.set('t',v.title);
       if(v.groups)q.set('g',v.groups);
-      if($('capOn').checked)q.set('x','1');
       if(v.deadline)q.set('d',v.deadline);
       $('out').dataset.url='';
       $('out').textContent=location.origin+location.pathname+'?'+q.toString();
@@ -1591,7 +1205,6 @@
 
       var line='  "'+name+'": '+JSON.stringify(conf);
       var base=location.origin+location.pathname+'?s='+name;
-      var capOn=$('capOn').checked;
 
       $('out').innerHTML='';
       var add=function(txt,style){
@@ -1599,19 +1212,12 @@
         if(style)e.style.cssText=style;
         e.textContent=txt;
         $('out').appendChild(e);
-        return e;
       };
       add('① 저장소의 presets.json 에 아래 줄을 넣고 저장하세요:');
       add(line+',','margin:6px 0 14px;color:var(--text);user-select:all;');
-      add('② 모두에게 주는 주소 (시청자·스트리머 공용):');
-      add(base,'margin:6px 0 12px;color:var(--cut);user-select:all;');
-      if(capOn){
-        add('③ 스크린샷 권한까지 주는 주소 (특정 스트리머에게만):');
-        add(base+'&x=1','margin:6px 0 4px;color:var(--gold);user-select:all;');
-        add('※ 설정은 하나만 만들면 됩니다. 뒤에 &x=1 만 붙이면 스크린샷 버튼이 생깁니다.',
-            'margin-top:8px;color:var(--dim);');
-      }
-      $('out').dataset.url = capOn ? (base+'&x=1') : base;
+      add('② 그러면 이 주소로 열립니다:');
+      add(base,'margin:6px 0 4px;color:var(--cut);user-select:all;');
+      $('out').dataset.url = base;
     });
 
     $('copy').addEventListener('click',function(){

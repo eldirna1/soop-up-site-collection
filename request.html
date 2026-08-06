@@ -197,7 +197,7 @@
     <ol class="howto">
       <li>OBS에서 소스 <b>+</b> → <b>브라우저</b> 추가 (프릭샷은 <b>웹 소스</b>)</li>
       <li><b>URL</b> 칸에 받은 주소를 붙여넣기</li>
-      <li>너비 <b>400</b>, 높이 <b>390</b> 정도로 맞추기</li>
+      <li>너비 <b>440</b>, 높이 <b>420</b> 정도로 맞추기</li>
       <li>확인 누르고 크기·위치 조정</li>
     </ol>
     <p class="lead" style="margin-top:14px;margin-bottom:0">
@@ -246,7 +246,6 @@
           <option value="0">확정선 숨기기</option>
         </select></div>
     </div>
-    <label class="check"><input type="checkbox" id="acap"><span>순위표 스크린샷 권한도 같이 주기</span></label>
 
     <div id="alinks"></div>
     <div class="btns">
@@ -385,13 +384,6 @@
       var q3=new URLSearchParams(q.toString()); q3.set('bg','100');
       var solidUrl=BASE+'overlay.html?'+q3.toString();
 
-      var capUrl='';
-      if($('acap').checked){
-        var q2=new URLSearchParams();
-        q2.set('s',slug); q2.set('x','1');
-        capUrl=BASE+'applicants.html?'+q2.toString();
-      }
-
       box.innerHTML='';
       function card(title,url,desc){
         var d=document.createElement('div'); d.className='linkbox';
@@ -404,7 +396,6 @@
            '방송 화면이 은은하게 비쳐 보입니다. 기본값입니다.');
       card('오버레이 — 배경 불투명', solidUrl,
            '뒤가 전혀 안 비칩니다. 화면이 복잡할 때 글씨가 더 잘 보입니다.');
-      if(capUrl) card('순위표 + 스크린샷', capUrl, '스크린샷 버튼이 보이는 전체 순위표입니다.');
 
       reply =
         '['+($('aslug').value.trim()||'up2026')+'] 오버레이 링크입니다.\n\n'+
@@ -422,7 +413,7 @@
       $('asay').textContent='신청서의 인증번호가 위 숫자와 같은지, 쪽지 보낸 아이디가 같은지 확인해주세요.';
     }
 
-    ['aid','aslug','aaround','aitv','acut','acap'].forEach(function(k){
+    ['aid','aslug','aaround','aitv','acut'].forEach(function(k){
       $(k).addEventListener('input',makeLinks);
       $(k).addEventListener('change',makeLinks);
     });

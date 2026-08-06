@@ -149,7 +149,7 @@
   var P=new URLSearchParams(location.search);
 
   /* ===== 내 중계기 주소 (바뀌면 여기만 고치세요) ===== */
-  var RELAY='https://tired-echidna-4498.soop-up-site-collection.deno.net/list';
+  var RELAY=location.origin+'/list';   // 같은 곳에서 중계기가 돕니다
   /* ================================================= */
 
   var S={ id:'', no:'', me:'', around:2, cut:0, interval:10, bg:92, wait:10,

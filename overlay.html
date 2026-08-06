@@ -152,7 +152,7 @@
   var RELAY='https://tired-echidna-4498.soop-up-site-collection.deno.net/list';
   /* ================================================= */
 
-  var S={ id:'', no:'', me:'', around:2, cut:0, interval:10, bg:92,
+  var S={ id:'', no:'', me:'', around:2, cut:0, interval:10, bg:92, wait:10,
           groups:[], relay:RELAY, items:[], prev:null, busy:false, err:'' };
 
   /* ---------- 배경 진하기 ---------- */
@@ -249,9 +249,26 @@
     S.relay=src.r||src.relay||RELAY;
     paintBg(src.bg!=null&&src.bg!=='' ? src.bg : 92);
     if(src.t||src.title)$('ttl').textContent=src.t||src.title;
-    if(S.timer)clearInterval(S.timer);
-    if(S.id){ load(); S.timer=setInterval(load,S.interval*1000); }
+    if(S.timer)clearTimeout(S.timer);
+    S.wait=S.interval;
+    if(S.id){ load(); tick2(); }
   }
+
+  /* ---------- 언제 새로 가져올지 ---------- */
+  // 방송용이라 창이 숨는 일은 드물지만, 순위가 한동안 그대로면 조금 느긋하게 갑니다.
+  function tick2(){
+    clearTimeout(S.timer);
+    if(document.hidden){ S.timer=setTimeout(tick2,3000); return; }
+    load();
+    S.timer=setTimeout(tick2,Math.max(5,S.wait)*1000);
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden)return;
+    S.wait=S.interval;
+    clearTimeout(S.timer);
+    if(S.id)load();
+    S.timer=setTimeout(tick2,Math.max(5,S.wait)*1000);
+  });
 
   /* ---------- 가져오기 ---------- */
   function listUrl(){

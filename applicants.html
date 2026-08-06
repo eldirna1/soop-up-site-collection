@@ -161,6 +161,16 @@
 
   .msg{padding:44px 22px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.9;white-space:pre-line;}
   .msg.err{color:#FF9A8B;}
+  .howwork{
+    margin-top:14px;padding:15px 18px;
+    background:var(--panel);border:1px solid var(--edge);border-radius:12px;
+    font-size:12px;color:var(--dim);line-height:1.95;
+  }
+  .howwork b{color:var(--muted);font-weight:700;}
+  .howwork>b:first-child{display:block;font-size:13px;color:var(--text);
+    font-weight:800;margin-bottom:5px;}
+  .howwork em{font-style:normal;color:var(--gold);font-weight:800;}
+
   .foot{margin-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
     font-size:11.5px;color:var(--dim);}
   .foot a{color:var(--muted);}
@@ -417,6 +427,13 @@
     <span id="stat"></span>
     <span>추천수를 누르면 댓글 내용이 보이고, 프로필 사진을 누르면 방송국으로 이동합니다.</span>
   </div>
+
+  <div class="howwork">
+    <b>순위는 <em id="itvTxt">10초</em>마다 새로 가져옵니다</b>
+    다른 탭이나 다른 창을 보고 계시는 동안에는 잠시 멈춰 있다가,
+    <b>이 화면을 다시 보는 순간 곧바로 최신 순위로 바뀝니다.</b>
+    오래 켜두고 자리를 비우셔도 괜찮습니다 — 돌아와서 화면을 보시면 바로 따라잡습니다.
+  </div>
 </div>
 
 <div class="sheet" id="sheet">
@@ -445,7 +462,7 @@
   /* ================================================= */
 
   var S={
-    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,deadline:null,
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,wait:10,awake:true,deadline:null,
     groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
@@ -565,6 +582,39 @@
   function groupsToParam(){
     return S.groups.map(function(g){return g.name+'~'+g.keys.join(',');}).join('|');
   }
+
+  /* ---------- 언제 새로 가져올지 ---------- */
+  // 창이 뒤에 숨어 있으면 아무것도 안 가져옵니다. 45일 켜둬도 부담이 없도록.
+  // 순위가 한동안 그대로면 간격을 늘렸다가, 움직이기 시작하면 바로 되돌립니다.
+  function tickLoad(){
+    clearTimeout(S.timer);
+    if(document.hidden){                       // 안 보이는 동안은 쉽니다
+      S.timer=setTimeout(tickLoad,3000);
+      return;
+    }
+    if(!S.awake){                              // 오래 안 보던 창
+      S.timer=setTimeout(tickLoad,5000);
+      return;
+    }
+    load();
+    S.timer=setTimeout(tickLoad,Math.max(5,S.wait)*1000);
+  }
+  var lastSeen=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){ lastSeen=Date.now(); return; }
+    // 다시 보게 되면 즉시 한 번 가져옵니다
+    S.awake=true; S.wait=S.interval;
+    clearTimeout(S.timer);
+    if(S.id)load();
+    S.timer=setTimeout(tickLoad,Math.max(5,S.wait)*1000);
+  });
+  ['mousemove','keydown','touchstart','scroll'].forEach(function(ev){
+    window.addEventListener(ev,function(){ S.awake=true; lastSeen=Date.now(); },{passive:true});
+  });
+  setInterval(function(){
+    // 두 시간 넘게 아무 반응이 없으면 잠깐 재웁니다 (다시 보면 곧바로 깨어납니다)
+    if(Date.now()-lastSeen>2*60*60*1000)S.awake=false;
+  },60000);
 
   /* ---------- 가져오기 ---------- */
   // 1순위: 중계기로 실시간   2순위: 깃허브가 5분마다 모아둔 예비 자료
@@ -1097,13 +1147,15 @@
     S.cut = S.cutOn ? Number(src.cut||0) : 0;
     S.interval=Number(src.interval||10);
     S.deadline=src.deadline?new Date(src.deadline).getTime():null;
+    if($('itvTxt'))$('itvTxt').textContent=S.interval+'초';
     if(src.title)$('title').textContent=src.title;
     $('sub').innerHTML = S.cut>0
       ? ('UP 순위 상위 <b>'+S.cut+'명</b>까지 참가가 확정됩니다.<br>'+(S.cut+1)+'위 이하 지원자들은 추첨을 통해 참가가 확정됩니다.')
       : 'UP이 많은 순서대로 지원자를 보여줍니다.';
     document.title=(src.title||'지원자 UP 순위');
-    if(S.timer)clearInterval(S.timer);
-    if(S.id){ load(); S.timer=setInterval(load,S.interval*1000); }
+    if(S.timer)clearTimeout(S.timer);
+    S.wait=S.interval;
+    if(S.id){ load(); tickLoad(); }
     tick();
   }
 

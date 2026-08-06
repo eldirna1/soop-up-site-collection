@@ -76,6 +76,9 @@
   .where a{text-decoration:none;font-size:12.5px;font-weight:700;color:var(--text);
     background:var(--pill);border:1px solid var(--edge);border-radius:9px;padding:10px 15px;}
   .where a:hover{background:var(--pill-hi);}
+  .where button{font:inherit;font-size:12.5px;font-weight:700;color:var(--text);
+    background:var(--pill);border:1px solid var(--edge);border-radius:9px;padding:10px 15px;cursor:pointer;}
+  .where button:hover{background:var(--pill-hi);}
   .where a.big{background:var(--cut);border-color:var(--cut);color:#0A0D16;}
   .where a.big:hover{background:#96A2FF;}
 
@@ -89,6 +92,14 @@
   .howto b{color:var(--text);font-weight:700;}
 
   .foot{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;text-align:center;}
+
+  .mailonly{margin-top:12px;padding:15px 17px;border-radius:12px;
+    background:rgba(124,140,255,.07);border:1px solid rgba(124,140,255,.3);
+    font-size:12.5px;color:var(--muted);line-height:1.85;}
+  .mailonly>b:first-child{display:block;font-size:13px;color:var(--cut);
+    font-weight:800;margin-bottom:4px;}
+  .mailonly b{color:var(--text);font-weight:700;}
+  .mailonly .tipline{display:block;margin-top:8px;font-size:11.5px;color:var(--dim);}
 
   .rulebox{border-color:rgba(255,209,102,.34);background:linear-gradient(180deg,
     rgba(255,209,102,.07),rgba(20,26,43,.6));}
@@ -105,6 +116,29 @@
   .admin{border-color:var(--gold);}
   .admin>h2 .no{color:var(--gold);}
   .divide{height:1px;background:var(--line);margin:18px 0;}
+  .applied{margin-top:14px;padding:14px 17px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--edge);
+    font-size:12.5px;color:var(--muted);line-height:1.8;}
+  .applied>b{display:block;font-size:13px;font-weight:800;margin-bottom:4px;color:var(--text);}
+  .applied.ok{background:rgba(95,211,160,.08);border-color:rgba(95,211,160,.35);}
+  .applied.ok>b{color:var(--ok);}
+  .applied.no{background:rgba(255,138,120,.08);border-color:rgba(255,138,120,.35);}
+  .applied.no>b{color:var(--warn);}
+
+  .mailchk{margin-top:14px;padding:15px 17px;border-radius:12px;
+    background:rgba(124,140,255,.07);border:1px solid rgba(124,140,255,.3);
+    font-size:12px;color:var(--muted);line-height:1.85;}
+  .mailchk>b:first-child{display:block;font-size:13px;color:var(--cut);
+    font-weight:800;margin-bottom:5px;}
+  .mailchk b{color:var(--text);font-weight:700;}
+  .onetime{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:11px 0 7px;}
+  .onetime span{font-size:26px;font-weight:900;letter-spacing:.16em;color:var(--cut);
+    font-variant-numeric:tabular-nums;}
+  .onetime button{font:inherit;font-size:12px;font-weight:700;color:var(--text);
+    background:var(--pill);border:1px solid var(--edge);border-radius:9px;
+    padding:8px 13px;cursor:pointer;}
+  .onetime button:hover{background:var(--pill-hi);}
+  .mailchk .tip{display:block;font-size:11px;color:var(--dim);}
   .linkbox{background:var(--panel);border:1px solid var(--edge);border-radius:11px;
     padding:13px 15px;margin-bottom:9px;}
   .linkbox .t{font-size:11.5px;font-weight:800;color:var(--gold);margin-bottom:6px;}
@@ -142,7 +176,8 @@
       <b>(개발자가 외부에 있을 시 답변이 느릴 수 있습니다.)</b></p>
     <ul class="rules">
       <li>컨텐츠에 실제로 지원한 스트리머일 것 (댓글이 목록에 있어야 합니다)</li>
-      <li>신청서에 적은 아이디와 쪽지를 보낸 아이디가 같을 것</li>
+      <li>신청서에 적은 아이디와 쪽지를 보낸 아이디가 같을 것<br>
+        <span style="color:var(--dim)">메일로 보내실 경우, 내 댓글이 파랗게 표시된 화면 캡처를 첨부</span></li>
       <li>컨텐츠 조건에 부합한 스트리머일 것</li>
       <li>받은 링크를 다른 사람에게 넘기지 말 것</li>
     </ul>
@@ -175,7 +210,10 @@
   <div class="step">
     <h2><span class="no">2</span>쪽지로 보내기</h2>
     <p class="lead">신청서는 자동으로 복사됩니다. 아래 버튼으로 방송국을 열고,
-       <b>쪽지</b> 버튼을 눌러 붙여넣어 보내주세요.</p>
+       <b>쪽지</b> 버튼을 눌러 붙여넣어 보내주세요.<br>
+       <b>쪽지로 보내시면 별도 확인 없이 바로 처리됩니다.</b>
+       메일로 보내실 경우, 본인 확인을 위해 SOOP 쪽지로 확인번호를 보내드립니다.
+       그 번호를 메일로 회신해주시면 됩니다.</p>
 
     <div class="paper empty" id="paper">1번을 채우면 신청서가 여기에 만들어집니다.</div>
     <div class="btns">
@@ -186,7 +224,20 @@
 
     <div class="where">
       <a id="toNote" href="#" target="_blank" rel="noopener" style="display:none" class="big">받는 사람 방송국 열기</a>
-      <a id="toMail" href="#" style="display:none">메일로 보내기</a>
+      <a id="toGmail" href="#" target="_blank" rel="noopener" style="display:none">Gmail로 보내기</a>
+      <button id="copyMail" style="display:none">메일 주소 복사</button>
+    </div>
+
+    <div class="mailonly" id="mailOnly" style="display:none">
+      <b>메일로 보내실 때는 캡처 한 장을 같이 보내주세요</b>
+      쪽지는 보낸 아이디가 자동으로 찍히지만, 메일은 그렇지 않아서 본인 확인이 안 됩니다.
+      <ol class="howto" style="padding-left:0;margin-top:9px">
+        <li>SOOP에 <b>로그인한 상태로</b> 대회 게시글을 엽니다.</li>
+        <li>댓글 목록에서 <b>내가 쓴 댓글이 파란 칸으로 표시</b>된 것을 찾습니다.</li>
+        <li>닉네임과 파란 칸이 함께 보이도록 <b>화면을 캡처</b>합니다.</li>
+        <li>신청서와 함께 메일에 첨부해서 보냅니다.</li>
+      </ol>
+      <span class="tipline">파란 칸은 로그인한 본인에게만 보입니다. 그래서 이 캡처가 본인 확인이 됩니다.</span>
     </div>
   </div>
 
@@ -222,6 +273,27 @@
     <div class="where" style="margin-top:0">
       <a id="agov" href="#" target="_blank" rel="noopener">방송국 열어보기</a>
       <a id="anote" href="#" target="_blank" rel="noopener">이 사람 방송국 열기 (쪽지)</a>
+    </div>
+
+    <div class="applied" id="applied">
+      <b id="apTitle">지원자 목록 확인</b>
+      <span id="apBody">아이디를 넣으면 대회 지원자 목록에서 찾아봅니다.</span>
+    </div>
+
+    <div class="mailchk">
+      <b>메일로만 신청이 왔을 때</b>
+      위에서 <b>지원자 목록에 있다고 나오면</b> 대개 그대로 발급하셔도 됩니다.
+      오버레이 링크에는 비밀이 없어서, 사칭해서 얻을 이득이 거의 없기 때문입니다.<br>
+      메일에 <b>자기 댓글이 파랗게 표시된 캡처</b>가 붙어 있으면 그것도 본인 확인이 됩니다.
+      (파란 칸은 로그인한 본인에게만 보입니다)<br>
+      그래도 미심쩍을 때만 아래를 쓰세요. 번호를 <b>그 사람 SOOP 쪽지로 보내고</b>,
+      메일로 회신받은 번호가 같으면 본인입니다.
+      <div class="onetime">
+        <span id="oneNum">------</span>
+        <button id="oneNew">새 번호 뽑기</button>
+        <button id="oneCopy">번호와 함께 보낼 쪽지 복사</button>
+      </div>
+      <span class="tip">이 번호는 누를 때마다 새로 나옵니다. 미리 알아낼 수 없어서 안전합니다.</span>
     </div>
 
     <div class="divide"></div>
@@ -339,14 +411,22 @@
     $('toNote').style.display='';
     $('toNote').href=noteTo(ADMIN_ID);
     if(ADMIN_MAIL){
-      $('toMail').style.display='';
-      $('toMail').href='mailto:'+ADMIN_MAIL+
-        '?subject='+encodeURIComponent('오버레이 링크 신청 - '+id)+
+      $('toGmail').style.display='';
+      $('copyMail').style.display='';
+      $('mailOnly').style.display='';
+      $('toGmail').href='https://mail.google.com/mail/?view=cm&fs=1&to='+
+        encodeURIComponent(ADMIN_MAIL)+
+        '&su='+encodeURIComponent('오버레이 링크 신청 - '+id)+
         '&body='+encodeURIComponent(made);
     }
     if(navigator.clipboard)navigator.clipboard.writeText(made).catch(function(){});
   }
   $('build').addEventListener('click',build);
+  $('copyMail').addEventListener('click',function(){
+    if(navigator.clipboard)navigator.clipboard.writeText(ADMIN_MAIL);
+    $('copyMail').textContent=ADMIN_MAIL+' 복사됨';
+    setTimeout(function(){$('copyMail').textContent='메일 주소 복사';},1800);
+  });
   $('copy').addEventListener('click',function(){
     if(!made){ tell('no','먼저 신청서를 만들어주세요.'); return; }
     if(navigator.clipboard)navigator.clipboard.writeText(made);
@@ -418,6 +498,96 @@
       $(k).addEventListener('input',makeLinks);
       $(k).addEventListener('change',makeLinks);
     });
+    var apTimer=null;
+    ['aid','aslug'].forEach(function(k){
+      $(k).addEventListener('input',function(){
+        clearTimeout(apTimer); apTimer=setTimeout(checkApplied,500);
+      });
+    });
+
+    /* ---------- 지원자 목록에서 찾아보기 ---------- */
+    var RELAY=location.origin+'/list';
+    var listCache={};                 // 같은 대회는 한 번만 받아옵니다
+
+    function getList(slug){
+      if(listCache[slug])return Promise.resolve(listCache[slug]);
+      return fetch('presets.json?t='+Date.now(),{cache:'no-store'})
+        .then(function(r){ if(!r.ok)throw new Error('presets.json 을 못 읽었습니다'); return r.json(); })
+        .then(function(all){
+          var c=all&&all[slug];
+          if(!c||!c.p)throw new Error('"'+slug+'" 설정이 presets.json 에 없습니다');
+          var m=String(c.p).match(/^([A-Za-z0-9_-]+)[\/:](\d+)$/);
+          if(!m)throw new Error('설정의 게시글 주소를 알아볼 수 없습니다');
+          var q=RELAY+'?id='+encodeURIComponent(m[1].toLowerCase())+'&no='+encodeURIComponent(m[2])+
+                '&slim=1'+(c.g?'&g='+encodeURIComponent(c.g):'');
+          return fetch(q,{cache:'no-store'}).then(function(r){ return r.json(); })
+            .then(function(j){
+              if(j&&j.error)throw new Error(j.error);
+              var names=(c.g||'').split('|').map(function(x){return (x.split('~')[0]||'').trim();});
+              var rows=(j.d||[]).map(function(a){
+                return { nick:a[0], uid:String(a[1]||'').toLowerCase(), up:Number(a[2])||0,
+                         grp:(a[4]==null?-1:Number(a[4])) };
+              });
+              rows.sort(function(x,y){return y.up-x.up;});
+              var n={};
+              rows.forEach(function(r2){ n[r2.grp]=(n[r2.grp]||0)+1; r2.rank=n[r2.grp]; });
+              var out={rows:rows, names:names};
+              listCache[slug]=out;
+              return out;
+            });
+        });
+    }
+    function checkApplied(){
+      var id=readId($('aid').value), slug=$('aslug').value.trim()||'up2026';
+      var box=$('applied');
+      if(!id){ box.className='applied';
+        $('apTitle').textContent='지원자 목록 확인';
+        $('apBody').textContent='아이디를 넣으면 대회 지원자 목록에서 찾아봅니다.'; return; }
+      box.className='applied';
+      $('apTitle').textContent='지원자 목록 확인';
+      $('apBody').textContent='찾아보는 중입니다…';
+      getList(slug).then(function(d){
+        if(readId($('aid').value)!==id)return;      // 그새 다른 아이디를 넣었으면 무시
+        var hit=null;
+        for(var i=0;i<d.rows.length;i++) if(d.rows[i].uid===id){ hit=d.rows[i]; break; }
+        if(hit){
+          box.className='applied ok';
+          $('apTitle').textContent='지원자 목록에 있습니다';
+          $('apBody').textContent=hit.nick+' · '+
+            (d.names[hit.grp]?d.names[hit.grp]+' ':'')+hit.rank+'위 · '+
+            hit.up.toLocaleString('ko-KR')+' UP';
+        }else{
+          box.className='applied no';
+          $('apTitle').textContent='지원자 목록에 없습니다';
+          $('apBody').textContent='이 대회에 댓글을 단 기록이 없습니다. 아이디를 다시 확인해주세요.';
+        }
+      }).catch(function(e){
+        box.className='applied';
+        $('apTitle').textContent='지원자 목록 확인';
+        $('apBody').textContent='확인하지 못했습니다: '+(e&&e.message||e);
+      });
+    }
+
+    var oneNum='';
+    function newOne(){
+      var n=Math.floor(Math.random()*900000)+100000;   // 매번 새로 뽑는 여섯 자리
+      oneNum=String(n);
+      $('oneNum').textContent=oneNum;
+    }
+    $('oneNew').addEventListener('click',newOne);
+    $('oneCopy').addEventListener('click',function(){
+      if(!oneNum)newOne();
+      var t='[오버레이 링크 신청 확인]\n\n'+
+        '메일로 신청 주신 것 확인했습니다.\n'+
+        '본인 확인을 위해 아래 번호를 신청하신 메일로 회신해주세요.\n\n'+
+        '확인번호: '+oneNum+'\n\n'+
+        '회신이 확인되면 바로 링크를 보내드리겠습니다.\n\n'+
+        '— '+ADMIN_NICK;
+      if(navigator.clipboard)navigator.clipboard.writeText(t);
+      $('oneCopy').textContent='복사됨';
+      setTimeout(function(){$('oneCopy').textContent='번호와 함께 보낼 쪽지 복사';},1600);
+    });
+    newOne();
 
     $('acopy').addEventListener('click',function(){
       if(!reply){ $('asay').className='say no'; $('asay').textContent='먼저 아이디를 넣어주세요.'; return; }

@@ -171,6 +171,17 @@
     font-weight:800;margin-bottom:5px;}
   .howwork em{font-style:normal;color:var(--gold);font-weight:800;}
 
+  .memo{background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.28);
+    border-radius:11px;padding:14px 16px;margin-bottom:11px;
+    font-size:11.5px;color:var(--muted);line-height:1.85;}
+  .memo b{color:var(--gold);font-weight:800;}
+  .memo>b:first-child{display:block;font-size:12.5px;margin-bottom:6px;}
+  .memo code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;
+    color:var(--gold);background:rgba(255,209,102,.12);border-radius:4px;padding:1px 5px;}
+  .memo .ex{display:block;margin:8px 0;padding:9px 11px;background:var(--panel);
+    border:1px solid var(--edge);border-radius:8px;color:var(--dim);
+    font-size:11px;line-height:1.95;word-break:break-all;}
+
   .foot{margin-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
     font-size:11.5px;color:var(--dim);}
   .foot a{color:var(--muted);}
@@ -281,6 +292,15 @@
   .ava.click:hover{border-color:var(--cut);}
   .up{cursor:pointer;}
 
+  /* 이미지 복사 */
+  .capbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px 0;}
+  .capbar button{font:inherit;font-size:13px;font-weight:800;color:#0A0D16;background:var(--gold);
+    border:0;border-radius:10px;padding:10px 18px;cursor:pointer;transition:opacity .13s ease;}
+  .capbar button:hover{opacity:.85;}
+  .capbar button:disabled{opacity:.5;cursor:default;}
+  .capnote{font-size:11.5px;color:var(--dim);line-height:1.6;}
+  .capnote.on{color:var(--gold);}
+
   /* 부문 탭 */
   .tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 18px 0;}
   .tabs button{
@@ -374,6 +394,15 @@
       <label>짧은 이름 (선택) — 넣으면 아주 짧은 주소를 만들 수 있습니다</label>
       <input id="slug" placeholder="영문 소문자로, 예: up2026">
     </div>
+    <div class="memo">
+      <b>이미지 복사 버튼은 주소로 켜집니다</b>
+      만들어둔 주소 뒤에 <code>&amp;x=1</code> 을 붙이면 <b>이미지 복사</b> 버튼이 생깁니다.
+      확정 인원까지를 한 장으로 만들어 클립보드에 넣어주고, 그림판·카페·방송국 어디서든
+      <code>Ctrl+V</code> 로 붙여넣을 수 있습니다.
+      <span class="ex">…/applicants.html?s=up2026 &nbsp;→&nbsp; 모두에게 주는 주소<br>
+      …/applicants.html?s=up2026<b>&amp;x=1</b> &nbsp;→&nbsp; 복사 버튼이 보이는 주소</span>
+      프로필 사진을 받아오느라 부담이 조금 있으니, <b>한두 명에게만</b> 주세요.
+    </div>
     <div class="btns">
       <button id="apply">미리보기</button>
       <button id="make">공유 주소 만들기</button>
@@ -407,6 +436,10 @@
 
   <div class="table">
     <div class="tabs" id="tabs" style="display:none"></div>
+    <div class="capbar" id="capbar" style="display:none">
+      <button id="capCopy">이미지 복사</button>
+      <span class="capnote" id="capNote">지금 보고 있는 탭을 확정 인원까지 한 장으로 만들어 복사합니다.</span>
+    </div>
     <div class="thead" id="thead">
       <div class="th c">순위</div>
       <div class="namecol">
@@ -458,11 +491,11 @@
   var P=new URLSearchParams(location.search);
 
   /* ===== 내 중계기 주소 (바뀌면 여기만 고치세요) ===== */
-  var RELAY='https://tired-echidna-4498.soop-up-site-collection.deno.net/list';
+  var RELAY=location.origin+'/list';   // 같은 곳에서 중계기가 돕니다
   /* ================================================= */
 
   var S={
-    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,wait:10,awake:true,deadline:null,
+    id:'',no:'',relay:'',cut:25,cutOn:true,interval:10,busy:false,backup:false,stale:'',prev:null,wait:10,awake:true,cap:false,deadline:null,
     groups:[],tab:0,
     items:[],sortBy:'up',sortDir:-1,q:'',err:'',lastAt:null,timer:null
   };
@@ -926,6 +959,215 @@
     box.appendChild(im);
   }
 
+  /* ---------- 이미지 복사 ---------- */
+  // 확정 인원까지를 한 장으로 만들어 클립보드에 넣습니다. (전용 링크에서만 보입니다)
+  var PIC={};
+  var FONT="'Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif";
+
+  function capNote(t,on){ var e=$('capNote'); e.textContent=t; e.className='capnote'+(on?' on':''); }
+  function picUrl(u){
+    return S.relay ? S.relay.replace(/\/list$/,'')+'/img?u='+encodeURIComponent(u) : u;
+  }
+  function loadPic(u){
+    if(PIC[u])return Promise.resolve(PIC[u]);
+    return new Promise(function(res){
+      if(!u)return res(null);
+      var done=false, fin=function(v){ if(done)return; done=true; if(v)PIC[u]=v; res(v); };
+      var im=new Image();
+      im.crossOrigin='anonymous'; im.referrerPolicy='no-referrer';
+      im.onload=function(){ fin(im); };
+      im.onerror=function(){ fin(null); };
+      setTimeout(function(){ fin(null); },12000);
+      im.src=picUrl(u);
+    });
+  }
+  function loadPics(list,onStep){
+    return new Promise(function(res){
+      var out={}, i=0, done=0, LANES=8;
+      if(!list.length)return res(out);
+      var next=function(){
+        if(i>=list.length)return;
+        var k=list[i++];
+        loadPic(k.url).then(function(im){
+          if(im)out[k.key]=im;
+          done++; if(onStep)onStep(done,list.length);
+          if(done===list.length)res(out); else next();
+        });
+      };
+      for(var n=0;n<Math.min(LANES,list.length);n++)next();
+    });
+  }
+
+  function roundRect(x,c,y,w,h,r){
+    x.beginPath();
+    x.moveTo(c+r,y); x.lineTo(c+w-r,y); x.quadraticCurveTo(c+w,y,c+w,y+r);
+    x.lineTo(c+w,y+h-r); x.quadraticCurveTo(c+w,y+h,c+w-r,y+h);
+    x.lineTo(c+r,y+h); x.quadraticCurveTo(c,y+h,c,y+h-r);
+    x.lineTo(c,y+r); x.quadraticCurveTo(c,y,c+r,y); x.closePath();
+  }
+  function fitText(x,t,max){
+    var v=String(t);
+    while(x.measureText(v).width>max && v.length>1)v=v.slice(0,-1);
+    return v===String(t)?v:v+'…';
+  }
+  function drawTop(x,W,title,sub){
+    x.fillStyle='#141A2B'; roundRect(x,20,16,W-40,72,16); x.fill();
+    x.fillStyle='#F2F4F9'; x.font='800 28px '+FONT; x.textAlign='left'; x.textBaseline='alphabetic';
+    x.fillText(fitText(x,title,W-160),44,54);
+    x.fillStyle='#8A93A8'; x.font='700 14px '+FONT;
+    x.fillText(sub,44,78);
+  }
+  function drawBottom(x,W,h){
+    x.fillStyle='#616C85'; x.font='700 13px '+FONT; x.textBaseline='middle'; x.textAlign='left';
+    x.fillText(S.lastAt?S.lastAt.toLocaleString('ko-KR')+' 기준':'',44,h-26);
+    x.textAlign='right'; x.fillText(location.host,W-44,h-26); x.textAlign='left';
+  }
+  function drawLine(x,r,pics,left,top,w,rowH,big){
+    if(r.__hot){ x.fillStyle='rgba(255,209,102,.08)'; x.fillRect(left,top,w,rowH);
+      x.fillStyle='#FFD166'; x.fillRect(left,top,3,rowH); }
+    x.strokeStyle='rgba(255,255,255,.05)'; x.lineWidth=1;
+    x.beginPath(); x.moveTo(left,top+rowH); x.lineTo(left+w,top+rowH); x.stroke();
+
+    var mid=top+rowH/2;
+    x.fillStyle=r.rank===1?'#FFD166':r.rank===2?'#D7DEF0':r.rank===3?'#E0A177':'#F2F4F9';
+    x.font='italic 800 '+(big?21:18)+'px '+FONT; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText(String(r.rank),left+(big?34:28),mid);
+    x.textAlign='left';
+
+    var ar=big?20:17, ax=left+(big?64:50), pic=pics[r.key];
+    x.save();
+    x.beginPath(); x.arc(ax+ar,mid,ar,0,Math.PI*2); x.closePath(); x.clip();
+    x.fillStyle='#212940'; x.fillRect(ax,mid-ar,ar*2,ar*2);
+    if(pic){ try{ x.drawImage(pic,ax,mid-ar,ar*2,ar*2); }catch(e){} }
+    else { x.fillStyle='#8A93A8'; x.font='800 '+(big?17:15)+'px '+FONT; x.textAlign='center';
+           x.fillText(r.nick.slice(0,1),ax+ar,mid+1); x.textAlign='left'; }
+    x.restore();
+
+    var nx=ax+ar*2+(big?16:12), upW=big?150:120;
+    x.fillStyle='#F2F4F9'; x.font='800 '+(big?18:15)+'px '+FONT;
+    x.fillText(fitText(x,r.nick,left+w-upW-nx),nx,mid);
+
+    x.textAlign='right';
+    x.fillStyle='#F2F4F9'; x.font='800 '+(big?20:17)+'px '+FONT;
+    x.fillText(r.up.toLocaleString('ko-KR'),left+w-(big?54:40),mid);
+    x.fillStyle='#8A93A8'; x.font='700 '+(big?13:11)+'px '+FONT;
+    x.fillText('UP',left+w-(big?18:12),mid+1);
+    x.textAlign='left';
+  }
+
+  function sheetOne(rows,pics,title,sub){
+    var sc=2, W=900, ROW=72, HEAD=104, FOOT=48;
+    var h=HEAD+rows.length*ROW+FOOT;
+    var cv=document.createElement('canvas');
+    cv.width=W*sc; cv.height=h*sc;
+    var x=cv.getContext('2d'); x.scale(sc,sc);
+    x.fillStyle='#0A0D16'; x.fillRect(0,0,W,h);
+    drawTop(x,W,title,sub);
+    rows.forEach(function(r,i){
+      var top=HEAD+i*ROW;
+      if(i%2===0){ x.fillStyle='rgba(255,255,255,.02)'; x.fillRect(20,top,W-40,ROW); }
+      drawLine(x,r,pics,20,top,W-40,ROW,true);
+    });
+    drawBottom(x,W,h);
+    return cv;
+  }
+  function sheetAll(cols,pics,title,sub){
+    var sc=1.7, n=cols.length, COLW=430, GAP=14, PAD=20;
+    var W=PAD*2+COLW*n+GAP*(n-1);
+    var ROW=60, HEAD=104, CH=40, FOOT=48, maxRows=0;
+    cols.forEach(function(c){ maxRows=Math.max(maxRows,c.rows.length); });
+    var h=HEAD+CH+maxRows*ROW+FOOT;
+    var cv=document.createElement('canvas');
+    cv.width=W*sc; cv.height=h*sc;
+    var x=cv.getContext('2d'); x.scale(sc,sc);
+    x.fillStyle='#0A0D16'; x.fillRect(0,0,W,h);
+    drawTop(x,W,title,sub);
+    cols.forEach(function(c,ci){
+      var left=PAD+ci*(COLW+GAP);
+      x.fillStyle='#101725'; roundRect(x,left,HEAD,COLW,CH+maxRows*ROW,12); x.fill();
+      x.fillStyle='#F2F4F9'; x.font='800 16px '+FONT; x.textBaseline='middle'; x.textAlign='left';
+      x.fillText(fitText(x,c.name,COLW-90),left+16,HEAD+CH/2);
+      x.fillStyle='#616C85'; x.font='700 12px '+FONT; x.textAlign='right';
+      x.fillText(c.rows.length+'명',left+COLW-16,HEAD+CH/2);
+      x.textAlign='left';
+      x.strokeStyle='rgba(255,255,255,.07)'; x.lineWidth=1;
+      x.beginPath(); x.moveTo(left,HEAD+CH); x.lineTo(left+COLW,HEAD+CH); x.stroke();
+      c.rows.forEach(function(r,i){
+        var top=HEAD+CH+i*ROW;
+        if(i%2===0){ x.fillStyle='rgba(255,255,255,.02)'; x.fillRect(left,top,COLW,ROW); }
+        drawLine(x,r,pics,left,top,COLW,ROW,false);
+      });
+    });
+    drawBottom(x,W,h);
+    return cv;
+  }
+
+  function upto(rows){
+    var lim=S.cut>0?S.cut:Infinity;
+    return rows.filter(function(r){ return r.rank<=lim; });
+  }
+  function markHot(rows){
+    var hot=hotOf(rows);
+    rows.forEach(function(r){ r.__hot=!!(hot&&hot.close&&Math.abs(r.up-hot.mid)<=hot.zone); });
+    return rows;
+  }
+  function planSheet(){
+    var title=$('title').textContent||'지원자 UP 순위', need=[];
+    var add=function(rows){ rows.forEach(function(r){ if(r.img)need.push({key:r.key,url:r.img}); }); };
+    if(S.groups.length && S.tab==='all'){
+      var cols=S.groups.map(function(g,i){
+        var rows=markHot(upto(S.items.filter(function(r){return r.grp===i;})));
+        add(rows); return {name:g.name, rows:rows};
+      }).filter(function(c){ return c.rows.length; });
+      if(!cols.length)return null;
+      var mx=0; cols.forEach(function(c){ mx=Math.max(mx,c.rows.length); });
+      return {kind:'all', cols:cols, need:need, title:title,
+              sub:'전체 · 1위 ~ '+mx+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'')};
+    }
+    var gi=S.groups.length?S.tab:-1;
+    var name=S.groups.length?(S.groups[gi]?S.groups[gi].name:'기타'):'';
+    var rows=markHot(upto(S.groups.length
+      ? S.items.filter(function(r){return r.grp===gi;})
+      : S.items.slice()));
+    if(!rows.length)return null;
+    add(rows);
+    return {kind:'one', rows:rows, need:need, title:title,
+            sub:(name?name+' · ':'')+'1위 ~ '+rows.length+'위'+(S.cut>0?' (확정 '+S.cut+'명까지)':'')};
+  }
+
+  function copyImage(){
+    var plan=planSheet();
+    if(!plan){ capNote('복사할 순위가 없습니다.'); return; }
+    $('capCopy').disabled=true;
+    var left=plan.need.filter(function(k){ return !PIC[k.url]; });
+    capNote(left.length?'프로필 사진을 받는 중입니다…':'이미지를 만들고 있습니다…',true);
+
+    loadPics(left,function(a,b){ capNote('프로필 사진 '+a+' / '+b+' …',true); })
+      .then(function(){
+        var pics={};
+        plan.need.forEach(function(k){ if(PIC[k.url])pics[k.key]=PIC[k.url]; });
+        capNote('이미지를 만들고 있습니다…',true);
+        var cv = plan.kind==='all'
+          ? sheetAll(plan.cols,pics,plan.title,plan.sub)
+          : sheetOne(plan.rows,pics,plan.title,plan.sub);
+        return new Promise(function(res){ cv.toBlob(function(b){ res({b:b,cv:cv}); },'image/png'); });
+      })
+      .then(function(r){
+        if(!r.b)throw new Error('이미지를 만들지 못했습니다.');
+        if(!(navigator.clipboard&&window.ClipboardItem))throw new Error('이 브라우저는 복사를 지원하지 않습니다.');
+        return navigator.clipboard.write([new ClipboardItem({'image/png':r.b})]);
+      })
+      .then(function(){
+        capNote('복사됐습니다. 붙여넣을 곳에서 Ctrl+V 를 누르세요.',true);
+        $('capCopy').disabled=false;
+      })
+      .catch(function(e){
+        capNote('복사하지 못했습니다: '+(e&&e.message||e));
+        $('capCopy').disabled=false;
+      });
+  }
+  $('capCopy').addEventListener('click',copyImage);
+
   /* ---------- 자리 이동 애니메이션 ---------- */
   function markPositions(){
     var m={};
@@ -1008,6 +1250,7 @@
     if(!S.items.length){ body.innerHTML='<div class="msg">아직 지원자가 없습니다.</div>';return; }
 
     drawTabs();
+    $('capbar').style.display = S.cap ? '' : 'none';
 
     if(S.groups.length && S.tab==='all'){
       $('thead').classList.add('slim');
@@ -1141,6 +1384,7 @@
     var p=parsePost(src.post);
     if(p){S.id=p.id;S.no=p.no;}
     S.relay=src.relay||RELAY;
+    S.cap = String(src.cap||'')==='1';
     S.groups = parseGroups(src.groups||'');
     S.tab = S.groups.length?'all':-1;
     S.cutOn = String(src.cutOn==null?'1':src.cutOn)!=='0';
@@ -1189,7 +1433,8 @@
         if(!c)throw new Error('"'+slug+'" 라는 이름의 설정이 presets.json 안에 없습니다.');
         applyParams({
           post:c.p, relay:c.r||RELAY, cut:c.c, cutOn:c.cutOn,
-          interval:P.get('i')||c.i, deadline:c.d, title:c.t, groups:c.g
+          interval:P.get('i')||c.i, deadline:c.d, title:c.t, groups:c.g,
+          cap:P.get('x')
         });
       })
       .catch(function(e){ S.err=e.message||String(e); render(); });
@@ -1197,7 +1442,7 @@
     applyParams({
       post:G('p','post'), relay:G('r','relay'), cut:G('c','cut'), cutOn:P.get('cutOn'),
       interval:G('i','interval'), deadline:G('d','deadline'), title:G('t','title'),
-      groups:G('g','groups')
+      groups:G('g','groups'), cap:G('x','cap')
     });
   } else {
     var syncSw=function(){
